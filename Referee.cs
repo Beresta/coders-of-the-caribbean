@@ -32,38 +32,51 @@ namespace coders_of_the_caribbean_engine_dotnet
         private const int MINE_DAMAGE = 25;
         private const int NEAR_MINE_DAMAGE = 10;
 
-#if LEAGUE_LEVEL_0 // 1 ship / no mines / speed 1
-        private const int MAX_SHIPS = 1;
-        private const bool CANNONS_ENABLED = false;
-        private const bool MINES_ENABLED = false;
-        private const int MIN_MINES = 0;
-        private const int MAX_MINES = 0;
-        private const int MAX_SHIP_SPEED = 1;
-#endif
-#if LEAGUE_LEVEL_1 // add mines
-        private const int MAX_SHIPS = 1;
-        private const bool CANNONS_ENABLED = true;
-        private const bool MINES_ENABLED = true;
-        private const int MIN_MINES = 5;
-        private const int MAX_MINES = 10;
-        private const int MAX_SHIP_SPEED = 1;
-#endif
-#if LEAGUE_LEVEL_2 // 3 ships max
-        private const int MAX_SHIPS = 3;
-        private const bool CANNONS_ENABLED = true;
-        private const bool MINES_ENABLED = true;
-        private const int MIN_MINES = 5;
-        private const int MAX_MINES = 10;
-        private const int MAX_SHIP_SPEED = 1;
-#endif
-#if !LEAGUE_LEVEL_0 && !LEAGUE_LEVEL_1 && !LEAGUE_LEVEL_2 // increase max speed
-        private const int MAX_SHIPS = 3;
-        private const bool CANNONS_ENABLED = true;
-        private const bool MINES_ENABLED = true;
-        private const int MIN_MINES = 5;
-        private const int MAX_MINES = 10;
-        private const int MAX_SHIP_SPEED = 2;
-#endif
+        private static readonly int MAX_SHIPS;
+        private static readonly bool CANNONS_ENABLED;
+        private static readonly bool MINES_ENABLED;
+        private static readonly int MIN_MINES;
+        private static readonly int MAX_MINES;
+        private static readonly int MAX_SHIP_SPEED;
+
+        static Referee()
+        {
+            switch(LEAGUE_LEVEL)
+            {
+                case 0: // 1 ship / no mines / speed 1
+                    MAX_SHIPS = 1;
+                    CANNONS_ENABLED = false;
+                    MINES_ENABLED = false;
+                    MIN_MINES = 0;
+                    MAX_MINES = 0;
+                    MAX_SHIP_SPEED = 2;
+                    break;
+                case 1: // add mines
+                    MAX_SHIPS = 1;
+                    CANNONS_ENABLED = true;
+                    MINES_ENABLED = true;
+                    MIN_MINES = 5;
+                    MAX_MINES = 10;
+                    MAX_SHIP_SPEED = 1;
+                    break;
+                case 2: // 3 ships max
+                    MAX_SHIPS = 3;
+                    CANNONS_ENABLED = true;
+                    MINES_ENABLED = true;
+                    MIN_MINES = 5;
+                    MAX_MINES = 10;
+                    MAX_SHIP_SPEED = 1;
+                    break;
+                default: // increase max speed
+                    MAX_SHIPS = 3;
+                    CANNONS_ENABLED = true;
+                    MINES_ENABLED = true;
+                    MIN_MINES = 5;
+                    MAX_MINES = 10;
+                    MAX_SHIP_SPEED = 2;
+                    break;
+            }
+        }
 
         private static Regex PLAYER_INPUT_MOVE_PATTERN = new Regex("MOVE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_SLOWER_PATTERN = new Regex("SLOWER(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
@@ -1124,363 +1137,363 @@ namespace coders_of_the_caribbean_engine_dotnet
             return ship.health <= 0;
         }
 
-        //private void moveShips() {
-        //	// ---
-        //	// Go forward
-        //	// ---
-        //	for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
-        //		for (Player player : players) {
-        //			for (Ship ship : player.shipsAlive) {
-        //				ship.newPosition = ship.position;
-        //				ship.newBowCoordinate = ship.bow();
-        //				ship.newSternCoordinate = ship.stern();
+        private void moveShips() {
+        	// ---
+        	// Go forward
+        	// ---
+        	for (int i = 1; i <= MAX_SHIP_SPEED; i++) {
+        		foreach (var player in players) {
+        			foreach (var ship in player.shipsAlive) {
+        				ship.newPosition = ship.position;
+        				ship.newBowCoordinate = ship.bow();
+        				ship.newSternCoordinate = ship.stern();
 
-        //				if (i > ship.speed) {
-        //					continue;
-        //				}
+        				if (i > ship.speed) {
+        					continue;
+        				}
 
-        //				Coord newCoordinate = ship.position.neighbor(ship.orientation);
+        				Coord newCoordinate = ship.position.neighbor(ship.orientation);
 
-        //				if (newCoordinate.isInsideMap()) {
-        //					// Set new coordinate.
-        //					ship.newPosition = newCoordinate;
-        //					ship.newBowCoordinate = newCoordinate.neighbor(ship.orientation);
-        //					ship.newSternCoordinate = newCoordinate.neighbor((ship.orientation + 3) % 6);
-        //				} else {
-        //					// Stop ship!
-        //					ship.speed = 0;
-        //				}
-        //			}
-        //		}
+        				if (newCoordinate.isInsideMap()) {
+        					// Set new coordinate.
+        					ship.newPosition = newCoordinate;
+        					ship.newBowCoordinate = newCoordinate.neighbor(ship.orientation);
+        					ship.newSternCoordinate = newCoordinate.neighbor((ship.orientation + 3) % 6);
+        				} else {
+        					// Stop ship!
+        					ship.speed = 0;
+        				}
+        			}
+        		}
 
-        //		// Check ship and obstacles collisions
-        //		List<Ship> collisions = new ArrayList<>();
-        //		boolean collisionDetected = true;
-        //		while (collisionDetected) {
-        //			collisionDetected = false;
+        		// Check ship and obstacles collisions
+        		var collisions = new List<Ship>();
+        		bool collisionDetected = true;
+        		while (collisionDetected) {
+        			collisionDetected = false;
 
-        //			for (Ship ship : this.ships) {
-        //				if (ship.newBowIntersect(ships)) {
-        //					collisions.add(ship);
-        //				}
-        //			}
+        			foreach (Ship ship in ships) {
+        				if (ship.newBowIntersect(ships)) {
+        					collisions.Add(ship);
+        				}
+        			}
 
-        //			for (Ship ship : collisions) {
-        //				// Revert last move
-        //				ship.newPosition = ship.position;
-        //				ship.newBowCoordinate = ship.bow();
-        //				ship.newSternCoordinate = ship.stern();
+        			foreach (Ship ship in collisions) {
+        				// Revert last move
+        				ship.newPosition = ship.position;
+        				ship.newBowCoordinate = ship.bow();
+        				ship.newSternCoordinate = ship.stern();
 
-        //				// Stop ships
-        //				ship.speed = 0;
+        				// Stop ships
+        				ship.speed = 0;
 
-        //				collisionDetected = true;
-        //			}
-        //			collisions.clear();
-        //		}
+        				collisionDetected = true;
+        			}
+        			collisions.Clear();
+        		}
 
-        //		for (Player player : players) {
-        //			for (Ship ship : player.shipsAlive) {
-        //				ship.position = ship.newPosition;
-        //				if (checkCollisions(ship)) {
-        //					shipLosts.add(ship);
-        //				}
-        //			}
-        //		}
-        //	}
-        //}
+                foreach (var player in players)
+                {
+                    foreach (var ship in player.shipsAlive)
+                    {
+                        ship.position = ship.newPosition;
+        				if (checkCollisions(ship)) {
+        					shipLosts.Add(ship);
+        				}
+        			}
+        		}
+        	}
+        }
 
-        //private void rotateShips() {
-        //	// Rotate
-        //	for (Player player : players) {
-        //		for (Ship ship : player.shipsAlive) {
-        //			ship.newPosition = ship.position;
-        //			ship.newBowCoordinate = ship.newBow();
-        //			ship.newSternCoordinate = ship.newStern();
-        //		}
-        //	}
+        private void rotateShips() {
+            // Rotate
+            foreach (var player in players)
+            {
+                foreach (var ship in player.shipsAlive)
+                {
+                    ship.newPosition = ship.position;
+        			ship.newBowCoordinate = ship.newBow();
+        			ship.newSternCoordinate = ship.newStern();
+        		}
+        	}
 
-        //	// Check collisions
-        //	boolean collisionDetected = true;
-        //	List<Ship> collisions = new ArrayList<>();
-        //	while (collisionDetected) {
-        //		collisionDetected = false;
+        	// Check collisions
+        	bool collisionDetected = true;
+            var collisions = new List<Ship>();
+            while (collisionDetected) {
+        		collisionDetected = false;
 
-        //		for (Ship ship : this.ships) {
-        //			if (ship.newPositionsIntersect(ships)) {
-        //				collisions.add(ship);
-        //			}
-        //		}
+        		foreach (var ship in ships) {
+        			if (ship.newPositionsIntersect(ships)) {
+        				collisions.Add(ship);
+        			}
+        		}
 
-        //		for (Ship ship : collisions) {
-        //			ship.newOrientation = ship.orientation;
-        //			ship.newBowCoordinate = ship.newBow();
-        //			ship.newSternCoordinate = ship.newStern();
-        //			ship.speed = 0;
-        //			collisionDetected = true;
-        //		}
+                foreach (var ship in collisions) {
+        			ship.newOrientation = ship.orientation;
+        			ship.newBowCoordinate = ship.newBow();
+        			ship.newSternCoordinate = ship.newStern();
+        			ship.speed = 0;
+        			collisionDetected = true;
+        		}
 
-        //		collisions.clear();
-        //	}
+        		collisions.Clear();
+        	}
 
-        //	// Apply rotation
-        //	for (Player player : players) {
-        //		for (Ship ship : player.shipsAlive) {
-        //			if (ship.health == 0) {
-        //				continue;
-        //			}
+        	// Apply rotation
+        	foreach (var player in players)
+            {
+                foreach (var ship in player.shipsAlive)
+                {
+        			if (ship.health == 0) {
+        				continue;
+        			}
 
-        //			ship.orientation = ship.newOrientation;
-        //			if (checkCollisions(ship)) {
-        //				shipLosts.add(ship);
-        //			}
-        //		}
-        //	}
-        //}
+        			ship.orientation = ship.newOrientation;
+        			if (checkCollisions(ship)) {
+        				shipLosts.Add(ship);
+        			}
+        		}
+        	}
+        }
 
-        //private boolean gameIsOver() {
-        //	for (Player player : players) {
-        //		if (player.shipsAlive.isEmpty()) {
-        //			return true;
-        //		}
-        //	}
-        //	return barrels.size() == 0 && LEAGUE_LEVEL == 0;
-        //}
+        private bool gameIsOver() {
+        	foreach (var player in players) {
+        		if (player.shipsAlive.Count == 0) {
+        			return true;
+        		}
+        	}
+        	return barrels.Count == 0 && LEAGUE_LEVEL == 0;
+        }
 
-        //void explodeShips() {
-        //	for (Iterator<Coord> it = cannonBallExplosions.iterator(); it.hasNext();) {
-        //		Coord position = it.next();
-        //		for (Ship ship : ships) {
-        //			if (position.equals(ship.bow()) || position.equals(ship.stern())) {
-        //				damage.add(new Damage(position, LOW_DAMAGE, true));
-        //				ship.damage(LOW_DAMAGE);
-        //				it.remove();
-        //				break;
-        //			} else if (position.equals(ship.position)) {
-        //				damage.add(new Damage(position, HIGH_DAMAGE, true));
-        //				ship.damage(HIGH_DAMAGE);
-        //				it.remove();
-        //				break;
-        //			}
-        //		}
-        //	}
-        //}
+        void explodeShips() {
+            for (var i = cannonBallExplosions.Count - 1; i >= 0; i--) {
+                var position = cannonBallExplosions[i];
+                foreach (var ship in ships)
+                {
+                    if (position.Equals(ship.bow()) || position.Equals(ship.stern()))
+                    {
+                        damage.Add(new Damage(position, LOW_DAMAGE, true));
+                        ship.damage(LOW_DAMAGE);
+                        cannonBallExplosions.RemoveAt(i);
+                        break;
+                    }
+                    else if (position.Equals(ship.position))
+                    {
+                        damage.Add(new Damage(position, HIGH_DAMAGE, true));
+                        ship.damage(HIGH_DAMAGE);
+                        cannonBallExplosions.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+        }
 
-        //void explodeMines() {
-        //	for (Iterator<Coord> itBall = cannonBallExplosions.iterator(); itBall.hasNext();) {
-        //		Coord position = itBall.next();
-        //		for (Iterator<Mine> it = mines.iterator(); it.hasNext();) {
-        //			Mine mine = it.next();
-        //			if (mine.position.equals(position)) {
-        //				damage.addAll(mine.explode(ships, true));
-        //				it.remove();
-        //				itBall.remove();
-        //				break;
-        //			}
-        //		}
-        //	}
-        //}
+        void explodeMines() {
+            for (var i = cannonBallExplosions.Count - 1; i >= 0; i--)
+            {
+                var position = cannonBallExplosions[i];
+                for(var j = mines.Count - 1; j >= 0; j--)
+                {
+                    var mine = mines[j];
+                    if (mine.position.Equals(position))
+                    {
+                        damage.AddRange(mine.explode(ships, true));
+                        cannonBallExplosions.RemoveAt(i);
+                        mines.RemoveAt(j);
+                        break;
+                    }
+                }
+            }
+        }
 
-        //void explodeBarrels() {
-        //	for (Iterator<Coord> itBall = cannonBallExplosions.iterator(); itBall.hasNext();) {
-        //		Coord position = itBall.next();
-        //		for (Iterator<RumBarrel> it = barrels.iterator(); it.hasNext();) {
-        //			RumBarrel barrel = it.next();
-        //			if (barrel.position.equals(position)) {
-        //				damage.add(new Damage(position, 0, true));
-        //				it.remove();
-        //				itBall.remove();
-        //				break;
-        //			}
-        //		}
-        //	}
-        //}
+        void explodeBarrels() {
+            for (var i = cannonBallExplosions.Count - 1; i >= 0; i--)
+            {
+                var position = cannonBallExplosions[i];
+                for (var j = barrels.Count - 1; j >= 0; j--)
+                {
+                    var barrel = barrels[j];
+                    if (barrel.position.Equals(position))
+                    {
+                        damage.Add(new Damage(position, 0, true));
+                        cannonBallExplosions.RemoveAt(i);
+                        barrels.RemoveAt(j);
+                        break;
+                    }
+                }
+            }
+        }
 
-        //@Override
-        //protected void updateGame(int round) throws GameOverException {
-        //	moveCannonballs();
-        //	decrementRum();
+        protected void updateGame(int round) {
+        	moveCannonballs();
+        	decrementRum();
 
-        //	applyActions();
-        //	moveShips();
-        //	rotateShips();
+        	applyActions();
+        	moveShips();
+        	rotateShips();
 
-        //	explodeShips();
-        //	explodeMines();
-        //	explodeBarrels();
+        	explodeShips();
+        	explodeMines();
+        	explodeBarrels();
 
-        //	for (Ship ship : shipLosts) {
-        //		barrels.add(new RumBarrel(ship.position.x, ship.position.y, REWARD_RUM_BARREL_VALUE));
-        //	}
+        	foreach (var ship in shipLosts) {
+        		barrels.Add(new RumBarrel(ship.position.x, ship.position.y, REWARD_RUM_BARREL_VALUE));
+        	}
 
-        //	for (Coord position : cannonBallExplosions) {
-        //		damage.add(new Damage(position, 0, false));
-        //	}
+            foreach (var position in cannonBallExplosions) {
+        		damage.Add(new Damage(position, 0, false));
+        	}
 
-        //	for (Iterator<Ship> it = ships.iterator(); it.hasNext();) {
-        //		Ship ship = it.next();
-        //		if (ship.health <= 0) {
-        //			players.get(ship.owner).shipsAlive.remove(ship);
-        //			it.remove();
-        //		}
-        //	}
+            for(var i = ships.Count - 1; i >= 0; i--)
+            {
+                Ship ship = ships[i];
+                if (ship.health <= 0)
+                {
+                    players[ship.owner].shipsAlive.Remove(ship);
+                    ships.RemoveAt(i);
+                }
+            }
 
-        //	if (gameIsOver()) {
-        //		throw new GameOverException("endReached");
-        //	}
-        //}
+        	if (gameIsOver()) {
+        		throw new Exception("endReached");
+        	}
+        }
 
-        //@Override
-        //protected void populateMessages(Properties p) {
-        //	p.put("endReached", "End reached");
-        //}
+        protected void populateMessages(Dictionary<string, string> prop) {
+            prop.Add("endReached", "End reached");
+        }
 
-        //@Override
-        //protected String[] getInitInputForPlayer(int playerIdx) {
-        //	return new String[0];
-        //}
+        protected String[] getInitInputForPlayer(int playerIdx) {
+        	return new String[0];
+        }
 
-        //@Override
-        //protected String[] getInputForPlayer(int round, int playerIdx) {
-        //	List<String> data = new ArrayList<>();
+        protected String[] getInputForPlayer(int round, int playerIdx) {
+        	var data = new List<string>();
 
-        //	// Player's ships first
-        //	for (Ship ship : players.get(playerIdx).shipsAlive) {
-        //		data.add(ship.toPlayerString(playerIdx));
-        //	}
+        	// Player's ships first
+        	foreach (var ship in players[playerIdx].shipsAlive) {
+        		data.Add(ship.toPlayerString(playerIdx));
+        	}
 
-        //	// Number of ships
-        //	data.add(0, String.valueOf(data.size()));
+        	// Number of ships
+        	data.Insert(0, data.Count.ToString());
 
-        //	// Opponent's ships
-        //	for (Ship ship : players.get((playerIdx + 1) % 2).shipsAlive) {
-        //		data.add(ship.toPlayerString(playerIdx));
-        //	}
+        	// Opponent's ships
+        	foreach (var ship in players[(playerIdx + 1) % 2].shipsAlive) {
+        		data.Add(ship.toPlayerString(playerIdx));
+        	}
 
-        //	// Visible mines
-        //	for (Mine mine : mines) {
-        //		boolean visible = false;
-        //		for (Ship ship : players.get(playerIdx).ships) {
-        //			if (ship.position.distanceTo(mine.position) <= MINE_VISIBILITY_RANGE) {
-        //				visible = true;
-        //				break;
-        //			}
-        //		}
-        //		if (visible) {
-        //			data.add(mine.toPlayerString(playerIdx));
-        //		}
-        //	}
+        	// Visible mines
+        	foreach (var mine in mines) {
+        		bool visible = false;
+        		foreach (var ship in players[playerIdx].ships) {
+        			if (ship.position.distanceTo(mine.position) <= MINE_VISIBILITY_RANGE) {
+        				visible = true;
+        				break;
+        			}
+        		}
+        		if (visible) {
+        			data.Add(mine.toPlayerString(playerIdx));
+        		}
+        	}
 
-        //	for (Cannonball ball : cannonballs) {
-        //		data.add(ball.toPlayerString(playerIdx));
-        //	}
+        	foreach (var ball in cannonballs) {
+        		data.Add(ball.toPlayerString(playerIdx));
+        	}
 
-        //	for (RumBarrel barrel : barrels) {
-        //		data.add(barrel.toPlayerString(playerIdx));
-        //	}
+            foreach (var barrel in barrels) {
+        		data.Add(barrel.toPlayerString(playerIdx));
+        	}
 
-        //	data.add(1, String.valueOf(data.size() - 1));
+        	data.Insert(1, (data.Count - 1).ToString());
 
-        //	return data.toArray(new String[data.size()]);
-        //}
+            return data.ToArray();
+        }
 
-        //@Override
-        //protected String[] getInitDataForView() {
-        //	List<String> data = new ArrayList<>();
+        protected String[] getInitDataForView() {
+        	var data = new List<string>();
 
-        //	data.add(join(MAP_WIDTH, MAP_HEIGHT, players.get(0).ships.size(), MINE_VISIBILITY_RANGE));
+        	data.Add(join(MAP_WIDTH, MAP_HEIGHT, players[0].ships.Count, MINE_VISIBILITY_RANGE));
 
-        //	data.add(0, String.valueOf(data.size() + 1));
+        	data.Insert(0, (data.Count + 1).ToString());
 
-        //	return data.toArray(new String[data.size()]);
-        //}
+            return data.ToArray();
+        }
 
-        //@Override
-        //protected String[] getFrameDataForView(int round, int frame, boolean keyFrame) {
-        //	List<String> data = new ArrayList<>();
+        protected String[] getFrameDataForView(int round, int frame, bool keyFrame) {
+        	var data = new List<string>();
 
-        //	for (Player player : players) {
-        //		data.addAll(player.toViewString());
-        //	}
-        //	data.add(String.valueOf(cannonballs.size()));
-        //	for (Cannonball ball : cannonballs) {
-        //		data.add(ball.toViewString());
-        //	}
-        //	data.add(String.valueOf(mines.size()));
-        //	for (Mine mine : mines) {
-        //		data.add(mine.toViewString());
-        //	}
-        //	data.add(String.valueOf(barrels.size()));
-        //	for (RumBarrel barrel : barrels) {
-        //		data.add(barrel.toViewString());
-        //	}
-        //	data.add(String.valueOf(damage.size()));
-        //	for (Damage d : damage) {
-        //		data.add(d.toViewString());
-        //	}
+        	foreach (var player in players) {
+        		data.AddRange(player.toViewString());
+        	}
+        	data.Add(cannonballs.Count.ToString());
+            foreach (Cannonball ball in cannonballs) {
+        		data.Add(ball.toViewString());
+        	}
+        	data.Add(mines.Count.ToString());
+            foreach (var mine in mines) {
+        		data.Add(mine.toViewString());
+        	}
+        	data.Add(barrels.Count.ToString());
+            foreach (var barrel in barrels) {
+        		data.Add(barrel.toViewString());
+        	}
+        	data.Add(damage.Count.ToString());
+            foreach (var d in damage) {
+        		data.Add(d.toViewString());
+        	}
 
-        //	return data.toArray(new String[data.size()]);
-        //}
+        	return data.ToArray();
+        }
 
-        //@Override
-        //protected String getGameName() {
-        //	return "CodersOfTheCaribbean";
-        //}
+        protected String getGameName() {
+        	return "CodersOfTheCaribbean";
+        }
 
-        //@Override
-        //protected String getHeadlineAtGameStartForConsole() {
-        //	return null;
-        //}
+        protected String getHeadlineAtGameStartForConsole() {
+        	return null;
+        }
 
-        //@Override
-        //protected int getMinimumPlayerCount() {
-        //	return 2;
-        //}
+        protected int getMinimumPlayerCount() {
+        	return 2;
+        }
 
-        //@Override
-        //protected boolean showTooltips() {
-        //	return true;
-        //}
+        protected bool showTooltips() {
+        	return true;
+        }
 
-        //@Override
-        //protected String[] getPlayerActions(int playerIdx, int round) {
-        //	return new String[0];
-        //}
+        protected String[] getPlayerActions(int playerIdx, int round) {
+        	return new String[0];
+        }
 
-        //@Override
-        //protected boolean isPlayerDead(int playerIdx) {
-        //	return false;
-        //}
+        protected bool isPlayerDead(int playerIdx) {
+        	return false;
+        }
 
-        //@Override
-        //protected String getDeathReason(int playerIdx) {
-        //	return "$" + playerIdx + ": Eliminated!";
-        //}
+        protected String getDeathReason(int playerIdx) {
+        	return "$" + playerIdx + ": Eliminated!";
+        }
 
-        //@Override
-        //protected int getScore(int playerIdx) {
-        //	return players.get(playerIdx).getScore();
-        //}
+        protected int getScore(int playerIdx) {
+        	return players[playerIdx].getScore();
+        }
 
-        //@Override
-        //protected String[] getGameSummary(int round) {
-        //	return new String[0];
-        //}
+        protected String[] getGameSummary(int round) {
+        	return new String[0];
+        }
 
-        //@Override
-        //protected void setPlayerTimeout(int frame, int round, int playerIdx) {
-        //	players.get(playerIdx).setDead();
-        //}
+        protected void setPlayerTimeout(int frame, int round, int playerIdx) {
+        	players[playerIdx].setDead();
+        }
 
-        //@Override
-        //protected int getMaxRoundCount(int playerCount) {
-        //	return 200;
-        //}
+        protected int getMaxRoundCount(int playerCount) {
+        	return 200;
+        }
 
-        //@Override
-        //protected int getMillisTimeForRound() {
-        //	return 50;
-        //}
+        protected int getMillisTimeForRound() {
+        	return 50;
+        }
 
     }
 
