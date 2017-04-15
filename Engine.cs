@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace coders_of_the_caribbean_engine_dotnet
 {
@@ -63,14 +65,14 @@ namespace coders_of_the_caribbean_engine_dotnet
         private const int MAX_SHIP_SPEED = 2;
 #endif
 
-        //private static final Pattern PLAYER_INPUT_MOVE_PATTERN = Pattern.compile("MOVE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_SLOWER_PATTERN = Pattern.compile("SLOWER(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_FASTER_PATTERN = Pattern.compile("FASTER(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_WAIT_PATTERN = Pattern.compile("WAIT(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_PORT_PATTERN = Pattern.compile("PORT(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_STARBOARD_PATTERN = Pattern.compile("STARBOARD(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_FIRE_PATTERN = Pattern.compile("FIRE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-        //private static final Pattern PLAYER_INPUT_MINE_PATTERN = Pattern.compile("MINE(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
+        private static Regex PLAYER_INPUT_MOVE_PATTERN = new Regex("MOVE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_SLOWER_PATTERN = new Regex("SLOWER(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_FASTER_PATTERN = new Regex("FASTER(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_WAIT_PATTERN = new Regex("WAIT(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_PORT_PATTERN = new Regex("PORT(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_STARBOARD_PATTERN = new Regex("STARBOARD(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_FIRE_PATTERN = new Regex("FIRE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_MINE_PATTERN = new Regex("MINE(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
 
         public static int clamp(int val, int min, int max)
         {
@@ -311,11 +313,11 @@ namespace coders_of_the_caribbean_engine_dotnet
 
         public class Cannonball : Entity
         {
-            int ownerEntityId;
-            int srcX;
-            int srcY;
-            int initialRemainingTurns;
-            int remainingTurns;
+            public int ownerEntityId;
+            public int srcX;
+            public int srcY;
+            public int initialRemainingTurns;
+            public int remainingTurns;
 
             public Cannonball(int row, int col, int ownerEntityId, int srcX, int srcY, int remainingTurns)
                 : base(EntityType.CANNONBALL, row, col)
@@ -339,7 +341,7 @@ namespace coders_of_the_caribbean_engine_dotnet
 
         public class RumBarrel : Entity
         {
-            private int health;
+            public int health;
 
             public RumBarrel(int x, int y, int health)
                 : base(EntityType.BARREL, x, y)
@@ -358,23 +360,27 @@ namespace coders_of_the_caribbean_engine_dotnet
             }
         }
 
-        public class Damage {
-        	private Coord position;
-        	private int health;
-        	private bool hit;
+        public class Damage
+        {
+            private Coord position;
+            private int health;
+            private bool hit;
 
-        	public Damage(Coord position, int health, bool hit) {
-        		this.position = position;
-        		this.health = health;
-        		this.hit = hit;
-        	}
+            public Damage(Coord position, int health, bool hit)
+            {
+                this.position = position;
+                this.health = health;
+                this.hit = hit;
+            }
 
-        	public String toViewString() {
-        		return join(position.y, position.x, health, (hit ? 1 : 0));
-        	}
+            public String toViewString()
+            {
+                return join(position.y, position.x, health, (hit ? 1 : 0));
+            }
         }
 
-        public enum Action {
+        public enum Action
+        {
             FASTER,
             SLOWER,
             PORT,
@@ -385,15 +391,15 @@ namespace coders_of_the_caribbean_engine_dotnet
 
         public class Ship : Entity
         {
-            int orientation;
-            int speed;
-            int health;
-            int owner;
-            String message;
-            Action? action;
-            //int mineCooldown;
-            //int cannonCooldown;
-            Coord target;
+            public int orientation;
+            public int speed;
+            public int health;
+            public int owner;
+            public String message;
+            public Action? action;
+            public int mineCooldown;
+            public int cannonCooldown;
+            public Coord target;
             public int newOrientation;
             public Coord newPosition;
             public Coord newBowCoordinate;
@@ -677,364 +683,446 @@ namespace coders_of_the_caribbean_engine_dotnet
             }
         }
 
-        //private static class Player {
-        //	private int id;
-        //	private List<Ship> ships;
-        //	private List<Ship> shipsAlive;
+        private class Player
+        {
+            public int id;
+            public List<Ship> ships;
+            public List<Ship> shipsAlive;
 
-        //	public Player(int id) {
-        //		this.id = id;
-        //		this.ships = new ArrayList<>();
-        //		this.shipsAlive = new ArrayList<>();
-        //	}
+            public Player(int id)
+            {
+                this.id = id;
+                this.ships = new List<Ship>();
+                this.shipsAlive = new List<Ship>();
+            }
 
-        //	public void setDead() {
-        //		for (Ship ship : ships) {
-        //			ship.health = 0;
-        //		}
-        //	}
+            public void setDead()
+            {
+                foreach (var ship in ships)
+                {
+                    ship.health = 0;
+                }
+            }
 
-        //	public int getScore() {
-        //		int score = 0;
-        //		for (Ship ship : ships) {
-        //			score += ship.health;
-        //		}
-        //		return score;
-        //	}
+            public int getScore()
+            {
+                int score = 0;
+                foreach (var ship in ships)
+                {
+                    score += ship.health;
+                }
+                return score;
+            }
 
-        //	public List<String> toViewString() {
-        //		List<String> data = new ArrayList<>();
+            public List<String> toViewString()
+            {
+                var data = new List<string>();
 
-        //		data.add(String.valueOf(this.id));
-        //		for (Ship ship : ships) {
-        //			data.add(ship.toViewString());
-        //		}
+                data.Add(id.ToString());
+                foreach (var ship in ships)
+                {
+                    data.Add(ship.toViewString());
+                }
 
-        //		return data;
-        //	}
-        //}
+                return data;
+            }
+        }
 
-        //private long seed;
-        //private List<Cannonball> cannonballs;
-        //private List<Mine> mines;
-        //private List<RumBarrel> barrels;
-        //private List<Player> players;
-        //private List<Ship> ships;
-        //private List<Damage> damage;
-        //private List<Ship> shipLosts;
-        //private List<Coord> cannonBallExplosions;
-        //private int shipsPerPlayer;
-        //private int mineCount;
-        //private int barrelCount;
-        //private Random random;
+        private long seed;
+        private List<Cannonball> cannonballs = new List<Cannonball>();
+        private List<Mine> mines = new List<Mine>();
+        private List<RumBarrel> barrels = new List<RumBarrel>();
+        private List<Player> players = new List<Player>();
+        private List<Ship> ships;
+        private List<Damage> damage = new List<Damage>();
+        private List<Ship> shipLosts = new List<Ship>();
+        private List<Coord> cannonBallExplosions = new List<Coord>();
+        private int shipsPerPlayer;
+        private int mineCount;
+        private int barrelCount;
+        private Random random;
 
-        //public Referee(InputStream is, PrintStream out, PrintStream err) throws IOException {
-        //	super(is, out, err);
-        //}
+        public Engine(Stream sin, Stream sout, Stream err)
+        {
 
-        //public static void main(String... args) throws IOException {
-        //	new Referee(System.in, System.out, System.err);
-        //}
+        }
 
-        //@Override
-        //protected void initReferee(int playerCount, Properties prop) throws InvalidFormatException {
-        //	seed = Long.valueOf(prop.getProperty("seed", String.valueOf(new Random(System.currentTimeMillis()).nextLong())));
-        //	random = new Random(this.seed);
+        public class Random // Beresta added: Java Random port from stackoverflow: http://stackoverflow.com/questions/2147524/c-java-number-randomization
+        {
+            public Random(UInt64 seed)
+            {
+                this.seed = (seed ^ 0x5DEECE66DUL) & ((1UL << 48) - 1);
+            }
 
-        //	shipsPerPlayer = clamp(
-        //			Integer.valueOf(prop.getProperty("shipsPerPlayer", String.valueOf(random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS))), MIN_SHIPS,
-        //			MAX_SHIPS);
+            public int nextInt(int n)
+            {
+                if (n <= 0) throw new ArgumentException("n must be positive");
 
-        //	if (MAX_MINES > MIN_MINES) {
-        //		mineCount = clamp(Integer.valueOf(prop.getProperty("mineCount", String.valueOf(random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES))),
-        //				MIN_MINES, MAX_MINES);
-        //	} else {
-        //		mineCount = MIN_MINES;
-        //	}
+                if ((n & -n) == n)  // i.e., n is a power of 2
+                    return (int)((n * (long)Next(31)) >> 31);
 
-        //	barrelCount = clamp(
-        //			Integer.valueOf(prop.getProperty("barrelCount", String.valueOf(random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS))),
-        //			MIN_RUM_BARRELS, MAX_RUM_BARRELS);
+                long bits, val;
+                do
+                {
+                    bits = Next(31);
+                    val = bits % (UInt32)n;
+                }
+                while (bits - val + (n - 1) < 0);
 
-        //	cannonballs = new ArrayList<>();
-        //	cannonBallExplosions = new ArrayList<>();
-        //	damage = new ArrayList<>();
-        //	shipLosts = new ArrayList<>();
+                return (int)val;
+            }
 
-        //	// Generate Players
-        //	this.players = new ArrayList<Player>(playerCount);
-        //	for (int i = 0; i < playerCount; i++) {
-        //		this.players.add(new Player(i));
-        //	}
-        //	// Generate Ships
-        //	for (int j = 0; j < shipsPerPlayer; j++) {
-        //		int xMin = 1 + j * MAP_WIDTH / shipsPerPlayer;
-        //		int xMax = (j + 1) * MAP_WIDTH / shipsPerPlayer - 2;
+            public long nextLong()
+            {
+                return ((long)Next(32) << 32) + Next(32);
+            }
 
-        //		int y = 1 + random.nextInt(MAP_HEIGHT / 2 - 2);
-        //		int x = xMin + random.nextInt(1 + xMax - xMin);
-        //		int orientation = random.nextInt(6);
+            protected UInt32 Next(int bits)
+            {
+                seed = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1);
 
-        //		Ship ship0 = new Ship(x, y, orientation, 0);
-        //		Ship ship1 = new Ship(x, MAP_HEIGHT - 1 - y, (6 - orientation) % 6, 1);
+                return (UInt32)(seed >> (48 - bits));
+            }
 
-        //		this.players.get(0).ships.add(ship0);
-        //		this.players.get(1).ships.add(ship1);
-        //		this.players.get(0).shipsAlive.add(ship0);
-        //		this.players.get(1).shipsAlive.add(ship1);
-        //	}
+            private UInt64 seed;
+        }
 
-        //	this.ships = players.stream().map(p -> p.ships).flatMap(List::stream).collect(Collectors.toList());
+        protected void initReferee(int playerCount, Dictionary<string, string> prop)
+        {
+            seed = prop.GetLongProperty("seed", new Random((ulong)DateTime.Now.Ticks).nextLong());
+            random = new Random((ulong)seed);
 
-        //	// Generate mines
-        //	mines = new ArrayList<>();
-        //	while (mines.size() < mineCount) {
-        //		int x = 1 + random.nextInt(MAP_WIDTH - 2);
-        //		int y = 1 + random.nextInt(MAP_HEIGHT / 2);
+            shipsPerPlayer = clamp(prop.GetIntProperty("shipsPerPlayer", (random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS)), MIN_SHIPS, MAX_SHIPS);
 
-        //		Mine m = new Mine(x, y);
-        //		boolean valid = true;
-        //		for (Ship ship : this.ships) {
-        //			if (ship.at(m.position)) {
-        //				valid = false;
-        //				break;
-        //			}
-        //		}
-        //		if (valid) {
-        //			if (y != MAP_HEIGHT - 1 - y) {
-        //				mines.add(new Mine(x, MAP_HEIGHT - 1 - y));
-        //			}
-        //			mines.add(m);
-        //		}
-        //	}
-        //	mineCount = mines.size();
+            if (MAX_MINES > MIN_MINES)
+            {
+                mineCount = clamp(prop.GetIntProperty("mineCount", random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES), MIN_MINES, MAX_MINES);
+            }
+            else
+            {
+                mineCount = MIN_MINES;
+            }
 
-        //	// Generate supplies
-        //	barrels = new ArrayList<>();
-        //	while (barrels.size() < barrelCount) {
-        //		int x = 1 + random.nextInt(MAP_WIDTH - 2);
-        //		int y = 1 + random.nextInt(MAP_HEIGHT / 2);
-        //		int h = MIN_RUM_BARREL_VALUE + random.nextInt(1 + MAX_RUM_BARREL_VALUE - MIN_RUM_BARREL_VALUE);
+            barrelCount = clamp(prop.GetIntProperty("barrelCount", random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS), MIN_RUM_BARRELS, MAX_RUM_BARRELS);
 
-        //		RumBarrel m = new RumBarrel(x, y, h);
-        //		boolean valid = true;
-        //		for (Ship ship : this.ships) {
-        //			if (ship.at(m.position)) {
-        //				valid = false;
-        //				break;
-        //			}
-        //		}
-        //		for (Mine mine : this.mines) {
-        //			if (mine.position.equals(m.position)) {
-        //				valid = false;
-        //				break;
-        //			}
-        //		}
-        //		if (valid) {
-        //			if (y != MAP_HEIGHT - 1 - y) {
-        //				barrels.add(new RumBarrel(x, MAP_HEIGHT - 1 - y, h));
-        //			}
-        //			barrels.add(m);
-        //		}
-        //	}
+            // Generate Players
+            for (int i = 0; i < playerCount; i++)
+            {
+                players.Add(new Player(i));
+            }
+            // Generate Ships
+            for (int j = 0; j < shipsPerPlayer; j++)
+            {
+                int xMin = 1 + j * MAP_WIDTH / shipsPerPlayer;
+                int xMax = (j + 1) * MAP_WIDTH / shipsPerPlayer - 2;
 
-        //}
+                int y = 1 + random.nextInt(MAP_HEIGHT / 2 - 2);
+                int x = xMin + random.nextInt(1 + xMax - xMin);
+                int orientation = random.nextInt(6);
 
-        //@Override
-        //protected Properties getConfiguration() {
-        //	Properties prop = new Properties();
-        //	prop.setProperty("seed", String.valueOf(seed));
-        //	prop.setProperty("shipsPerPlayer", String.valueOf(shipsPerPlayer));
-        //	prop.setProperty("barrelCount", String.valueOf(barrelCount));
-        //	prop.setProperty("mineCount", String.valueOf(mineCount));
-        //	return prop;
-        //}
+                Ship ship0 = new Ship(x, y, orientation, 0);
+                Ship ship1 = new Ship(x, MAP_HEIGHT - 1 - y, (6 - orientation) % 6, 1);
 
-        //@Override
-        //protected void prepare(int round) {
-        //	for (Player player : players) {
-        //		for (Ship ship : player.ships) {
-        //			ship.action = null;
-        //			ship.message = null;
-        //		}
-        //	}
-        //	cannonBallExplosions.clear();
-        //	damage.clear();
-        //	shipLosts.clear();
-        //}
+                players[0].ships.Add(ship0);
+                players[1].ships.Add(ship1);
+                players[0].shipsAlive.Add(ship0);
+                players[1].shipsAlive.Add(ship1);
+            }
 
-        //@Override
-        //protected int getExpectedOutputLineCountForPlayer(int playerIdx) {
-        //	return this.players.get(playerIdx).shipsAlive.size();
-        //}
+            ships = players.SelectMany(p => p.ships).ToList();
 
-        //@Override
-        //protected void handlePlayerOutput(int frame, int round, int playerIdx, String[] outputs)
-        //		throws WinException, LostException, InvalidInputException {
-        //	Player player = this.players.get(playerIdx);
+            // Generate mines
+            while (mines.Count < mineCount)
+            {
+                int x = 1 + random.nextInt(MAP_WIDTH - 2);
+                int y = 1 + random.nextInt(MAP_HEIGHT / 2);
 
-        //	try {
-        //		int i = 0;
-        //		for (String line : outputs) {
-        //			Matcher matchWait = PLAYER_INPUT_WAIT_PATTERN.matcher(line);
-        //			Matcher matchMove = PLAYER_INPUT_MOVE_PATTERN.matcher(line);
-        //			Matcher matchFaster = PLAYER_INPUT_FASTER_PATTERN.matcher(line);
-        //			Matcher matchSlower = PLAYER_INPUT_SLOWER_PATTERN.matcher(line);
-        //			Matcher matchPort = PLAYER_INPUT_PORT_PATTERN.matcher(line);
-        //			Matcher matchStarboard = PLAYER_INPUT_STARBOARD_PATTERN.matcher(line);
-        //			Matcher matchFire = PLAYER_INPUT_FIRE_PATTERN.matcher(line);
-        //			Matcher matchMine = PLAYER_INPUT_MINE_PATTERN.matcher(line);
-        //			Ship ship = player.shipsAlive.get(i++);
+                Mine m = new Mine(x, y);
+                bool valid = true;
+                foreach (var ship in ships)
+                {
+                    if (ship.at(m.position))
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid)
+                {
+                    if (y != MAP_HEIGHT - 1 - y)
+                    {
+                        mines.Add(new Mine(x, MAP_HEIGHT - 1 - y));
+                    }
+                    mines.Add(m);
+                }
+            }
+            mineCount = mines.Count;
 
-        //			if (matchMove.matches()) {
-        //				int x = Integer.parseInt(matchMove.group("x"));
-        //				int y = Integer.parseInt(matchMove.group("y"));
-        //				ship.setMessage(matchMove.group("message"));
-        //				ship.moveTo(x, y);
-        //			} else if (matchFaster.matches()) {
-        //				ship.setMessage(matchFaster.group("message"));
-        //				ship.faster();
-        //			} else if (matchSlower.matches()) {
-        //				ship.setMessage(matchSlower.group("message"));
-        //				ship.slower();
-        //			} else if (matchPort.matches()) {
-        //				ship.setMessage(matchPort.group("message"));
-        //				ship.port();
-        //			} else if (matchStarboard.matches()) {
-        //				ship.setMessage(matchStarboard.group("message"));
-        //				ship.starboard();
-        //			} else if (matchWait.matches()) {
-        //				ship.setMessage(matchWait.group("message"));
-        //			} else if (matchMine.matches()) {
-        //				ship.setMessage(matchMine.group("message"));
-        //				ship.placeMine();
-        //			} else if (matchFire.matches()) {
-        //				int x = Integer.parseInt(matchFire.group("x"));
-        //				int y = Integer.parseInt(matchFire.group("y"));
-        //				ship.setMessage(matchFire.group("message"));
-        //				ship.fire(x, y);
-        //			} else {
-        //				throw new InvalidInputException("A valid action", line);
-        //			}
-        //		}
-        //	} catch (InvalidInputException e) {
-        //		player.setDead();
-        //		throw e;
-        //	}
-        //}
+            // Generate supplies
+            while (barrels.Count < barrelCount)
+            {
+                int x = 1 + random.nextInt(MAP_WIDTH - 2);
+                int y = 1 + random.nextInt(MAP_HEIGHT / 2);
+                int h = MIN_RUM_BARREL_VALUE + random.nextInt(1 + MAX_RUM_BARREL_VALUE - MIN_RUM_BARREL_VALUE);
 
-        //private void decrementRum() {
-        //	for (Ship ship : ships) {
-        //		ship.damage(1);
-        //	}
-        //}
+                RumBarrel m = new RumBarrel(x, y, h);
+                bool valid = true;
+                foreach (var ship in ships)
+                {
+                    if (ship.at(m.position))
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+                foreach (var mine in mines)
+                {
+                    if (mine.position.Equals(m.position))
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid)
+                {
+                    if (y != MAP_HEIGHT - 1 - y)
+                    {
+                        barrels.Add(new RumBarrel(x, MAP_HEIGHT - 1 - y, h));
+                    }
+                    barrels.Add(m);
+                }
+            }
 
-        //private void moveCannonballs() {
-        //	for (Iterator<Cannonball> it = cannonballs.iterator(); it.hasNext();) {
-        //		Cannonball ball = it.next();
-        //		if (ball.remainingTurns == 0) {
-        //			it.remove();
-        //			continue;
-        //		} else if (ball.remainingTurns > 0) {
-        //			ball.remainingTurns--;
-        //		}
+        }
 
-        //		if (ball.remainingTurns == 0) {
-        //			cannonBallExplosions.add(ball.position);
-        //		}
-        //	}
-        //}
+        protected Dictionary<string, string> getConfiguration()
+        {
+            var prop = new Dictionary<string, string>();
+            prop.Add("seed", seed.ToString());
+            prop.Add("shipsPerPlayer", shipsPerPlayer.ToString());
+            prop.Add("barrelCount", barrelCount.ToString());
+            prop.Add("mineCount", mineCount.ToString());
+            return prop;
+        }
 
-        //private void applyActions() {
-        //	for (Player player : players) {
-        //		for (Ship ship : player.shipsAlive) {
-        //			if (ship.mineCooldown > 0) {
-        //				ship.mineCooldown--;
-        //			}
-        //			if (ship.cannonCooldown > 0) {
-        //				ship.cannonCooldown--;
-        //			}
+        protected void prepare(int round)
+        {
+            foreach (var player in players)
+            {
+                foreach (var ship in player.ships)
+                {
+                    ship.action = null;
+                    ship.message = null;
+                }
+            }
+            cannonBallExplosions.Clear();
+            damage.Clear();
+            shipLosts.Clear();
+        }
 
-        //			ship.newOrientation = ship.orientation;
+        protected int getExpectedOutputLineCountForPlayer(int playerIdx)
+        {
+            return this.players[playerIdx].shipsAlive.Count;
+        }
 
-        //			if (ship.action != null) {
-        //				switch (ship.action) {
-        //				case FASTER:
-        //					if (ship.speed < MAX_SHIP_SPEED) {
-        //						ship.speed++;
-        //					}
-        //					break;
-        //				case SLOWER:
-        //					if (ship.speed > 0) {
-        //						ship.speed--;
-        //					}
-        //					break;
-        //				case PORT:
-        //					ship.newOrientation = (ship.orientation + 1) % 6;
-        //					break;
-        //				case STARBOARD:
-        //					ship.newOrientation = (ship.orientation + 5) % 6;
-        //					break;
-        //				case MINE:
-        //					if (ship.mineCooldown == 0) {
-        //						Coord target = ship.stern().neighbor((ship.orientation + 3) % 6);
+        protected void handlePlayerOutput(int frame, int round, int playerIdx, String[] outputs)
+        {
+            Player player = players[playerIdx];
 
-        //						if (target.isInsideMap()) {
-        //							boolean cellIsFreeOfBarrels = barrels.stream().noneMatch(barrel -> barrel.position.equals(target));
-        //							boolean cellIsFreeOfShips = ships.stream().filter(b -> b != ship).noneMatch(b -> b.at(target));
+            try
+            {
+                int i = 0;
+                foreach (var line in outputs)
+                {
+                    var matchWait = PLAYER_INPUT_WAIT_PATTERN.Match(line);
+                    var matchMove = PLAYER_INPUT_MOVE_PATTERN.Match(line);
+                    var matchFaster = PLAYER_INPUT_FASTER_PATTERN.Match(line);
+                    var matchSlower = PLAYER_INPUT_SLOWER_PATTERN.Match(line);
+                    var matchPort = PLAYER_INPUT_PORT_PATTERN.Match(line);
+                    var matchStarboard = PLAYER_INPUT_STARBOARD_PATTERN.Match(line);
+                    var matchFire = PLAYER_INPUT_FIRE_PATTERN.Match(line);
+                    var matchMine = PLAYER_INPUT_MINE_PATTERN.Match(line);
+                    Ship ship = player.shipsAlive[i++];
 
-        //							if (cellIsFreeOfBarrels && cellIsFreeOfShips) {
-        //								ship.mineCooldown = COOLDOWN_MINE;
-        //								Mine mine = new Mine(target.x, target.y);
-        //								mines.add(mine);
-        //							}
-        //						}
+                    if (matchMove.Success)
+                    {
+                        int x = int.Parse(matchMove.Groups["x"].Value);
+                        int y = int.Parse(matchMove.Groups["y"].Value);
+                        ship.setMessage(matchMove.Groups["message"].Value);
+                        ship.moveTo(x, y);
+                    }
+                    else if (matchFaster.Success)
+                    {
+                        ship.setMessage(matchFaster.Groups["message"].Value);
+                        ship.faster();
+                    }
+                    else if (matchSlower.Success)
+                    {
+                        ship.setMessage(matchSlower.Groups["message"].Value);
+                        ship.slower();
+                    }
+                    else if (matchPort.Success)
+                    {
+                        ship.setMessage(matchPort.Groups["message"].Value);
+                        ship.port();
+                    }
+                    else if (matchStarboard.Success)
+                    {
+                        ship.setMessage(matchStarboard.Groups["message"].Value);
+                        ship.starboard();
+                    }
+                    else if (matchWait.Success)
+                    {
+                        ship.setMessage(matchWait.Groups["message"].Value);
+                    }
+                    else if (matchMine.Success)
+                    {
+                        ship.setMessage(matchMine.Groups["message"].Value);
+                        ship.placeMine();
+                    }
+                    else if (matchFire.Success)
+                    {
+                        int x = int.Parse(matchFire.Groups["x"].Value);
+                        int y = int.Parse(matchFire.Groups["y"].Value);
+                        ship.setMessage(matchFire.Groups["message"].Value);
+                        ship.fire(x, y);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("A valid action", line);
+                    }
+                }
+            }
+            catch
+            {
+                player.setDead();
+                throw;
+            }
+        }
 
-        //					}
-        //					break;
-        //				case FIRE:
-        //					int distance = ship.bow().distanceTo(ship.target);
-        //					if (ship.target.isInsideMap() && distance <= FIRE_DISTANCE_MAX && ship.cannonCooldown == 0) {
-        //						int travelTime = (int) (1 + Math.round(ship.bow().distanceTo(ship.target) / 3.0));
-        //						cannonballs.add(new Cannonball(ship.target.x, ship.target.y, ship.id, ship.bow().x, ship.bow().y, travelTime));
-        //						ship.cannonCooldown = COOLDOWN_CANNON;
-        //					}
-        //					break;
-        //				default:
-        //					break;
-        //				}
-        //			}
-        //		}
-        //	}
-        //}
+        private void decrementRum()
+        {
+            foreach (var ship in ships)
+            {
+                ship.damage(1);
+            }
+        }
 
-        //private boolean checkCollisions(Ship ship) {
-        //	Coord bow = ship.bow();
-        //	Coord stern = ship.stern();
-        //	Coord center = ship.position;
+        private void moveCannonballs()
+        {
+            cannonballs.RemoveAll(b => b.remainingTurns == 0);
 
-        //	// Collision with the barrels
-        //	for (Iterator<RumBarrel> it = barrels.iterator(); it.hasNext();) {
-        //		RumBarrel barrel = it.next();
-        //		if (barrel.position.equals(bow) || barrel.position.equals(stern) || barrel.position.equals(center)) {
-        //			ship.heal(barrel.health);
-        //			it.remove();
-        //		}
-        //	}
+            foreach (var ball in cannonballs)
+            {
+                ball.remainingTurns--;
 
-        //	// Collision with the mines
-        //	for (Iterator<Mine> it = mines.iterator(); it.hasNext();) {
-        //		Mine mine = it.next();
-        //		List<Damage> mineDamage = mine.explode(ships, false);
+                if (ball.remainingTurns == 0)
+                {
+                    cannonBallExplosions.Add(ball.position);
+                }
+            }
+        }
 
-        //		if (!mineDamage.isEmpty()) {
-        //			damage.addAll(mineDamage);
-        //			it.remove();
-        //		}
-        //	}
+        private void applyActions()
+        {
+            foreach (var player in players)
+            {
+                foreach (var ship in player.shipsAlive)
+                {
+                    if (ship.mineCooldown > 0)
+                    {
+                        ship.mineCooldown--;
+                    }
+                    if (ship.cannonCooldown > 0)
+                    {
+                        ship.cannonCooldown--;
+                    }
 
-        //	return ship.health <= 0;
-        //}
+                    ship.newOrientation = ship.orientation;
+
+                    if (ship.action != null)
+                    {
+                        switch (ship.action.Value)
+                        {
+                            case Action.FASTER:
+                                if (ship.speed < MAX_SHIP_SPEED)
+                                {
+                                    ship.speed++;
+                                }
+                                break;
+                            case Action.SLOWER:
+                                if (ship.speed > 0)
+                                {
+                                    ship.speed--;
+                                }
+                                break;
+                            case Action.PORT:
+                                ship.newOrientation = (ship.orientation + 1) % 6;
+                                break;
+                            case Action.STARBOARD:
+                                ship.newOrientation = (ship.orientation + 5) % 6;
+                                break;
+                            case Action.MINE:
+                                if (ship.mineCooldown == 0)
+                                {
+                                    Coord target = ship.stern().neighbor((ship.orientation + 3) % 6);
+
+                                    if (target.isInsideMap())
+                                    {
+                                        bool cellIsFreeOfBarrels = !barrels.Any(b => b.position.Equals(target));
+                                        bool cellIsFreeOfShips = !ships.Any(s => s != ship && s.at(target));
+
+                                        if (cellIsFreeOfBarrels && cellIsFreeOfShips)
+                                        {
+                                            ship.mineCooldown = COOLDOWN_MINE;
+                                            Mine mine = new Mine(target.x, target.y);
+                                            mines.Add(mine);
+                                        }
+                                    }
+
+                                }
+                                break;
+                            case Action.FIRE:
+                                int distance = ship.bow().distanceTo(ship.target);
+                                if (ship.target.isInsideMap() && distance <= FIRE_DISTANCE_MAX && ship.cannonCooldown == 0)
+                                {
+                                    int travelTime = (int)(1 + Math.Round(ship.bow().distanceTo(ship.target) / 3.0));
+                                    cannonballs.Add(new Cannonball(ship.target.x, ship.target.y, ship.id, ship.bow().x, ship.bow().y, travelTime));
+                                    ship.cannonCooldown = COOLDOWN_CANNON;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool checkCollisions(Ship ship)
+        {
+            Coord bow = ship.bow();
+            Coord stern = ship.stern();
+            Coord center = ship.position;
+
+            // Collision with the barrels
+            var collisionBarrels = barrels.Where(barrel => barrel.position.Equals(bow) || barrel.position.Equals(stern) || barrel.position.Equals(center)).ToArray();
+            foreach (var barrel in collisionBarrels)
+            {
+                ship.heal(barrel.health);
+                barrels.Remove(barrel);
+            }
+
+            // Collision with the mines
+            var collisionMines = mines.Select(mine => Tuple.Create(mine, mine.explode(ships, false))).Where(m => m.Item2.Count > 0).ToArray();
+            foreach (var mine in collisionMines)
+            {
+                damage.AddRange(mine.Item2);
+                mines.Remove(mine.Item1);
+            }
+
+            return ship.health <= 0;
+        }
 
         //private void moveShips() {
         //	// ---
@@ -1394,6 +1482,32 @@ namespace coders_of_the_caribbean_engine_dotnet
         //	return 50;
         //}
 
+    }
+
+    static class PropertiesExtensions
+    {
+        public static int GetIntProperty(this Dictionary<string, string> prop, string key, int dft)
+        {
+            var val = getProperty(prop, key);
+            if (val == null)
+                return dft;
+            else
+                return int.Parse(val);
+        }
+        public static long GetLongProperty(this Dictionary<string, string> prop, string key, long dft)
+        {
+            var val = getProperty(prop, key);
+            if (val == null)
+                return dft;
+            else
+                return long.Parse(val);
+        }
+        static string getProperty(Dictionary<string, string> prop, string key) // Beresta added
+        {
+            if (prop.ContainsKey(key))
+                return prop[key];
+            return null;
+        }
     }
 
 }
