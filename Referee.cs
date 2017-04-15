@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace coders_of_the_caribbean_engine_dotnet
 {
 
-    public class Engine
+    public class Referee
     {
         private const int LEAGUE_LEVEL = 3;
 
@@ -742,7 +742,7 @@ namespace coders_of_the_caribbean_engine_dotnet
         private int barrelCount;
         private Random random;
 
-        public Engine(Stream sin, Stream sout, Stream err)
+        public Referee(Stream sin, Stream sout, Stream err)
         {
 
         }

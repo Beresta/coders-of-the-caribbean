@@ -9,7 +9,7 @@ namespace coders_of_the_caribbean_engine_dotnet
 
         static void Main(string[] args)
         {
-            var engine = new Engine(Console.OpenStandardInput(), Console.OpenStandardOutput(), Console.OpenStandardError());
+            var referee = new Referee(Console.OpenStandardInput(), Console.OpenStandardOutput(), Console.OpenStandardError());
         }
 
     }
