@@ -77,7 +77,7 @@ namespace coders_of_the_caribbean_engine_dotnet
             return Math.Max(min, Math.Min(max, val));
         }
 
-        static string join<T>(params T[] col)
+        static string join(params object[] col)
         {
             return string.Join(" ", col);
         }
@@ -86,8 +86,8 @@ namespace coders_of_the_caribbean_engine_dotnet
         {
             private readonly static int[,] DIRECTIONS_EVEN = new int[,] { { 1, 0 }, { 0, -1 }, { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 } };
             private readonly static int[,] DIRECTIONS_ODD = new int[,] { { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 1 } };
-            private readonly int x;
-            private readonly int y;
+            public readonly int x;
+            public readonly int y;
 
             public Coord(int x, int y)
             {
@@ -152,6 +152,11 @@ namespace coders_of_the_caribbean_engine_dotnet
                 return this.toCubeCoordinate().distanceTo(dst.toCubeCoordinate());
             }
 
+            public override int GetHashCode()
+            {
+                return x ^ y;
+            }
+
             public override bool Equals(object obj)
             {
                 var other = (Coord)obj;
@@ -205,392 +210,472 @@ namespace coders_of_the_caribbean_engine_dotnet
             }
         }
 
-        //private static enum EntityType {
-        //	SHIP, BARREL, MINE, CANNONBALL
-        //}
-
-        //public static abstract class Entity {
-        //	private static int UNIQUE_ENTITY_ID = 0;
-
-        //	protected final int id;
-        //	protected final EntityType type;
-        //	protected Coord position;
-
-        //	public Entity(EntityType type, int x, int y) {
-        //		this.id = UNIQUE_ENTITY_ID++;
-        //		this.type = type;
-        //		this.position = new Coord(x, y);
-        //	}
-
-        //	public String toViewString() {
-        //		return join(id, position.y, position.x);
-        //	}
-
-        //	protected String toPlayerString(int arg1, int arg2, int arg3, int arg4) {
-        //		return join(id, type.name(), position.x, position.y, arg1, arg2, arg3, arg4);
-        //	}
-        //}
-
-        //public static class Mine extends Entity {
-        //	public Mine(int x, int y) {
-        //		super(EntityType.MINE, x, y);
-        //	}
-
-        //	public String toPlayerString(int playerIdx) {
-        //		return toPlayerString(0, 0, 0, 0);
-        //	}
-
-        //	public List<Damage> explode(List<Ship> ships, boolean force) {
-        //		List<Damage> damage = new ArrayList<>();
-        //		Ship victim = null;
-
-        //		for (Ship ship : ships) {
-        //			if (position.equals(ship.bow()) || position.equals(ship.stern()) || position.equals(ship.position)) {
-        //				damage.add(new Damage(this.position, MINE_DAMAGE, true));
-        //				ship.damage(MINE_DAMAGE);
-        //				victim = ship;
-        //			}
-        //		}
-
-        //		if (force || victim != null) {
-        //			if (victim == null) {
-        //				damage.add(new Damage(this.position, MINE_DAMAGE, true));
-        //			}
-
-        //			for (Ship ship : ships) {
-        //				if (ship != victim) {
-        //					Coord impactPosition = null;
-        //					if (ship.stern().distanceTo(position) <= 1) {
-        //						impactPosition = ship.stern();
-        //					}
-        //					if (ship.bow().distanceTo(position) <= 1) {
-        //						impactPosition = ship.bow();
-        //					}
-        //					if (ship.position.distanceTo(position) <= 1) {
-        //						impactPosition = ship.position;
-        //					}
-
-        //					if (impactPosition != null) {
-        //						ship.damage(NEAR_MINE_DAMAGE);
-        //						damage.add(new Damage(impactPosition, NEAR_MINE_DAMAGE, true));
-        //					}
-        //				}
-        //			}
-        //		}
-
-        //		return damage;
-        //	}
-        //}
-
-        //public static class Cannonball extends Entity {
-        //	final int ownerEntityId;
-        //	final int srcX;
-        //	final int srcY;
-        //	final int initialRemainingTurns;
-        //	int remainingTurns;
-
-        //	public Cannonball(int row, int col, int ownerEntityId, int srcX, int srcY, int remainingTurns) {
-        //		super(EntityType.CANNONBALL, row, col);
-        //		this.ownerEntityId = ownerEntityId;
-        //		this.srcX = srcX;
-        //		this.srcY = srcY;
-        //		this.initialRemainingTurns = this.remainingTurns = remainingTurns;
-        //	}
-
-        //	public String toViewString() {
-        //		return join(id, position.y, position.x, srcY, srcX, initialRemainingTurns, remainingTurns, ownerEntityId);
-        //	}
-
-        //	public String toPlayerString(int playerIdx) {
-        //		return toPlayerString(ownerEntityId, remainingTurns, 0, 0);
-        //	}
-        //}
-
-        //public static class RumBarrel extends Entity {
-        //	private int health;
-
-        //	public RumBarrel(int x, int y, int health) {
-        //		super(EntityType.BARREL, x, y);
-        //		this.health = health;
-        //	}
-
-        //	public String toViewString() {
-        //		return join(id, position.y, position.x, health);
-        //	}
-
-        //	public String toPlayerString(int playerIdx) {
-        //		return toPlayerString(health, 0, 0, 0);
-        //	}
-        //}
-
-        //public static class Damage {
-        //	private final Coord position;
-        //	private final int health;
-        //	private final boolean hit;
-
-        //	public Damage(Coord position, int health, boolean hit) {
-        //		this.position = position;
-        //		this.health = health;
-        //		this.hit = hit;
-        //	}
-
-        //	public String toViewString() {
-        //		return join(position.y, position.x, health, (hit ? 1 : 0));
-        //	}
-        //}
-
-        //public static enum Action {
-        //	FASTER, SLOWER, PORT, STARBOARD, FIRE, MINE
-        //}
-
-        //public static class Ship extends Entity {
-        //	int orientation;
-        //	int speed;
-        //	int health;
-        //	int owner;
-        //	String message;
-        //	Action action;
-        //	int mineCooldown;
-        //	int cannonCooldown;
-        //	Coord target;
-        //	public int newOrientation;
-        //	public Coord newPosition;
-        //	public Coord newBowCoordinate;
-        //	public Coord newSternCoordinate;
-
-        //	public Ship(int x, int y, int orientation, int owner) {
-        //		super(EntityType.SHIP, x, y);
-        //		this.orientation = orientation;
-        //		this.speed = 0;
-        //		this.health = INITIAL_SHIP_HEALTH;
-        //		this.owner = owner;
-        //	}
-
-        //	public String toViewString() {
-        //		return join(id, position.y, position.x, orientation, health, speed, (action != null ? action : "WAIT"), bow().y, bow().x, stern().y,
-        //				stern().x, " ;" + (message != null ? message : ""));
-        //	}
-
-        //	public String toPlayerString(int playerIdx) {
-        //		return toPlayerString(orientation, speed, health, owner == playerIdx ? 1 : 0);
-        //	}
-
-        //	public void setMessage(String message) {
-        //		if (message != null && message.length() > 50) {
-        //			message = message.substring(0, 50) + "...";
-        //		}
-        //		this.message = message;
-        //	}
-
-        //	public void moveTo(int x, int y) {
-        //		Coord currentPosition = this.position;
-        //		Coord targetPosition = new Coord(x, y);
-
-        //		if (currentPosition.equals(targetPosition)) {
-        //			this.action = Action.SLOWER;
-        //			return;
-        //		}
-
-        //		double targetAngle, angleStraight, anglePort, angleStarboard, centerAngle, anglePortCenter, angleStarboardCenter;
-
-        //		switch (speed) {
-        //		case 2:
-        //			this.action = Action.SLOWER;
-        //			break;
-        //		case 1:
-        //			// Suppose we've moved first
-        //			currentPosition = currentPosition.neighbor(orientation);
-        //			if (!currentPosition.isInsideMap()) {
-        //				this.action = Action.SLOWER;
-        //				break;
-        //			}
-
-        //			// Target reached at next turn
-        //			if (currentPosition.equals(targetPosition)) {
-        //				this.action = null;
-        //				break;
-        //			}
-
-        //			// For each neighbor cell, find the closest to target
-        //			targetAngle = currentPosition.angle(targetPosition);
-        //			angleStraight = Math.min(Math.abs(orientation - targetAngle), 6 - Math.abs(orientation - targetAngle));
-        //			anglePort = Math.min(Math.abs((orientation + 1) - targetAngle), Math.abs((orientation - 5) - targetAngle));
-        //			angleStarboard = Math.min(Math.abs((orientation + 5) - targetAngle), Math.abs((orientation - 1) - targetAngle));
-
-        //			centerAngle = currentPosition.angle(new Coord(MAP_WIDTH / 2, MAP_HEIGHT / 2));
-        //			anglePortCenter = Math.min(Math.abs((orientation + 1) - centerAngle), Math.abs((orientation - 5) - centerAngle));
-        //			angleStarboardCenter = Math.min(Math.abs((orientation + 5) - centerAngle), Math.abs((orientation - 1) - centerAngle));
-
-        //			// Next to target with bad angle, slow down then rotate (avoid to turn around the target!)
-        //			if (currentPosition.distanceTo(targetPosition) == 1 && angleStraight > 1.5) {
-        //				this.action = Action.SLOWER;
-        //				break;
-        //			}
-
-        //			Integer distanceMin = null;
-
-        //			// Test forward
-        //			Coord nextPosition = currentPosition.neighbor(orientation);
-        //			if (nextPosition.isInsideMap()) {
-        //				distanceMin = nextPosition.distanceTo(targetPosition);
-        //				this.action = null;
-        //			}
-
-        //			// Test port
-        //			nextPosition = currentPosition.neighbor((orientation + 1) % 6);
-        //			if (nextPosition.isInsideMap()) {
-        //				int distance = nextPosition.distanceTo(targetPosition);
-        //				if (distanceMin == null || distance < distanceMin || distance == distanceMin && anglePort < angleStraight - 0.5) {
-        //					distanceMin = distance;
-        //					this.action = Action.PORT;
-        //				}
-        //			}
-
-        //			// Test starboard
-        //			nextPosition = currentPosition.neighbor((orientation + 5) % 6);
-        //			if (nextPosition.isInsideMap()) {
-        //				int distance = nextPosition.distanceTo(targetPosition);
-        //				if (distanceMin == null || distance < distanceMin
-        //						|| (distance == distanceMin && angleStarboard < anglePort - 0.5 && this.action == Action.PORT)
-        //						|| (distance == distanceMin && angleStarboard < angleStraight - 0.5 && this.action == null)
-        //						|| (distance == distanceMin && this.action == Action.PORT && angleStarboard == anglePort
-        //								&& angleStarboardCenter < anglePortCenter)
-        //						|| (distance == distanceMin && this.action == Action.PORT && angleStarboard == anglePort
-        //								&& angleStarboardCenter == anglePortCenter && (orientation == 1 || orientation == 4))) {
-        //					distanceMin = distance;
-        //					this.action = Action.STARBOARD;
-        //				}
-        //			}
-        //			break;
-        //		case 0:
-        //			// Rotate ship towards target
-        //			targetAngle = currentPosition.angle(targetPosition);
-        //			angleStraight = Math.min(Math.abs(orientation - targetAngle), 6 - Math.abs(orientation - targetAngle));
-        //			anglePort = Math.min(Math.abs((orientation + 1) - targetAngle), Math.abs((orientation - 5) - targetAngle));
-        //			angleStarboard = Math.min(Math.abs((orientation + 5) - targetAngle), Math.abs((orientation - 1) - targetAngle));
-
-        //			centerAngle = currentPosition.angle(new Coord(MAP_WIDTH / 2, MAP_HEIGHT / 2));
-        //			anglePortCenter = Math.min(Math.abs((orientation + 1) - centerAngle), Math.abs((orientation - 5) - centerAngle));
-        //			angleStarboardCenter = Math.min(Math.abs((orientation + 5) - centerAngle), Math.abs((orientation - 1) - centerAngle));
-
-        //			Coord forwardPosition = currentPosition.neighbor(orientation);
-
-        //			this.action = null;
-
-        //			if (anglePort <= angleStarboard) {
-        //				this.action = Action.PORT;
-        //			}
-
-        //			if (angleStarboard < anglePort || angleStarboard == anglePort && angleStarboardCenter < anglePortCenter
-        //					|| angleStarboard == anglePort && angleStarboardCenter == anglePortCenter && (orientation == 1 || orientation == 4)) {
-        //				this.action = Action.STARBOARD;
-        //			}
-
-        //			if (forwardPosition.isInsideMap() && angleStraight <= anglePort && angleStraight <= angleStarboard) {
-        //				this.action = Action.FASTER;
-        //			}
-        //			break;
-        //		}
-
-        //	}
-
-        //	public void faster() {
-        //		this.action = Action.FASTER;
-        //	}
-
-        //	public void slower() {
-        //		this.action = Action.SLOWER;
-        //	}
-
-        //	public void port() {
-        //		this.action = Action.PORT;
-        //	}
-
-        //	public void starboard() {
-        //		this.action = Action.STARBOARD;
-        //	}
-
-        //	public void placeMine() {
-        //		if (MINES_ENABLED) {
-        //			this.action = Action.MINE;
-        //		}
-        //	}
-
-        //	public Coord stern() {
-        //		return position.neighbor((orientation + 3) % 6);
-        //	}
-
-        //	public Coord bow() {
-        //		return position.neighbor(orientation);
-        //	}
-
-        //	public Coord newStern() {
-        //		return position.neighbor((newOrientation + 3) % 6);
-        //	}
-
-        //	public Coord newBow() {
-        //		return position.neighbor(newOrientation);
-        //	}
-
-        //	public boolean at(Coord coord) {
-        //		Coord stern = stern();
-        //		Coord bow = bow();
-        //		return stern != null && stern.equals(coord) || bow != null && bow.equals(coord) || position.equals(coord);
-        //	}
-
-        //	public boolean newBowIntersect(Ship other) {
-        //		return newBowCoordinate != null && (newBowCoordinate.equals(other.newBowCoordinate) || newBowCoordinate.equals(other.newPosition)
-        //				|| newBowCoordinate.equals(other.newSternCoordinate));
-        //	}
-
-        //	public boolean newBowIntersect(List<Ship> ships) {
-        //		for (Ship other : ships) {
-        //			if (this != other && newBowIntersect(other)) {
-        //				return true;
-        //			}
-        //		}
-        //		return false;
-        //	}
-
-        //	public boolean newPositionsIntersect(Ship other) {
-        //		boolean sternCollision = newSternCoordinate != null && (newSternCoordinate.equals(other.newBowCoordinate)
-        //				|| newSternCoordinate.equals(other.newPosition) || newSternCoordinate.equals(other.newSternCoordinate));
-        //		boolean centerCollision = newPosition != null && (newPosition.equals(other.newBowCoordinate) || newPosition.equals(other.newPosition)
-        //				|| newPosition.equals(other.newSternCoordinate));
-        //		return newBowIntersect(other) || sternCollision || centerCollision;
-        //	}
-
-        //	public boolean newPositionsIntersect(List<Ship> ships) {
-        //		for (Ship other : ships) {
-        //			if (this != other && newPositionsIntersect(other)) {
-        //				return true;
-        //			}
-        //		}
-        //		return false;
-        //	}
-
-        //	public void damage(int health) {
-        //		this.health -= health;
-        //		if (this.health <= 0) {
-        //			this.health = 0;
-        //		}
-        //	}
-
-        //	public void heal(int health) {
-        //		this.health += health;
-        //		if (this.health > MAX_SHIP_HEALTH) {
-        //			this.health = MAX_SHIP_HEALTH;
-        //		}
-        //	}
-
-        //	public void fire(int x, int y) {
-        //		if (CANNONS_ENABLED) {
-        //			Coord target = new Coord(x, y);
-        //			this.target = target;
-        //			this.action = Action.FIRE;
-        //		}
-        //	}
-        //}
+        public enum EntityType
+        {
+            SHIP,
+            BARREL,
+            MINE,
+            CANNONBALL
+        }
+
+        public abstract class Entity
+        {
+            private static int UNIQUE_ENTITY_ID = 0;
+
+            public int id;
+            public EntityType type;
+            public Coord position;
+
+            public Entity(EntityType type, int x, int y)
+            {
+                this.id = UNIQUE_ENTITY_ID++;
+                this.type = type;
+                this.position = new Coord(x, y);
+            }
+
+            public virtual string toViewString()
+            {
+                return join(id, position.y, position.x);
+            }
+
+            public virtual string toPlayerString(int arg1, int arg2, int arg3, int arg4)
+            {
+                return join(id, type.ToString(), position.x, position.y, arg1, arg2, arg3, arg4);
+            }
+        }
+
+        public class Mine : Entity
+        {
+            public Mine(int x, int y)
+                : base(EntityType.MINE, x, y)
+            {
+            }
+
+            public String toPlayerString(int playerIdx)
+            {
+                return toPlayerString(0, 0, 0, 0);
+            }
+
+            public List<Damage> explode(List<Ship> ships, bool force)
+            {
+                var damage = new List<Damage>();
+                Ship victim = null;
+
+                foreach (var ship in ships)
+                {
+                    if (position.Equals(ship.bow()) || position.Equals(ship.stern()) || position.Equals(ship.position))
+                    {
+                        damage.Add(new Damage(this.position, MINE_DAMAGE, true));
+                        ship.damage(MINE_DAMAGE);
+                        victim = ship;
+                    }
+                }
+
+                if (force || victim != null)
+                {
+                    if (victim == null)
+                    {
+                        damage.Add(new Damage(this.position, MINE_DAMAGE, true));
+                    }
+
+                    foreach (var ship in ships)
+                    {
+                        if (ship != victim)
+                        {
+                            Coord impactPosition = null;
+                            if (ship.stern().distanceTo(position) <= 1)
+                            {
+                                impactPosition = ship.stern();
+                            }
+                            if (ship.bow().distanceTo(position) <= 1)
+                            {
+                                impactPosition = ship.bow();
+                            }
+                            if (ship.position.distanceTo(position) <= 1)
+                            {
+                                impactPosition = ship.position;
+                            }
+
+                            if (impactPosition != null)
+                            {
+                                ship.damage(NEAR_MINE_DAMAGE);
+                                damage.Add(new Damage(impactPosition, NEAR_MINE_DAMAGE, true));
+                            }
+                        }
+                    }
+                }
+
+                return damage;
+            }
+        }
+
+        public class Cannonball : Entity
+        {
+            int ownerEntityId;
+            int srcX;
+            int srcY;
+            int initialRemainingTurns;
+            int remainingTurns;
+
+            public Cannonball(int row, int col, int ownerEntityId, int srcX, int srcY, int remainingTurns)
+                : base(EntityType.CANNONBALL, row, col)
+            {
+                this.ownerEntityId = ownerEntityId;
+                this.srcX = srcX;
+                this.srcY = srcY;
+                this.initialRemainingTurns = this.remainingTurns = remainingTurns;
+            }
+
+            public override string toViewString()
+            {
+                return join(id, position.y, position.x, srcY, srcX, initialRemainingTurns, remainingTurns, ownerEntityId);
+            }
+
+            public string toPlayerString(int playerIdx)
+            {
+                return toPlayerString(ownerEntityId, remainingTurns, 0, 0);
+            }
+        }
+
+        public class RumBarrel : Entity
+        {
+            private int health;
+
+            public RumBarrel(int x, int y, int health)
+                : base(EntityType.BARREL, x, y)
+            {
+                this.health = health;
+            }
+
+            public override string toViewString()
+            {
+                return join(id, position.y, position.x, health);
+            }
+
+            public string toPlayerString(int playerIdx)
+            {
+                return toPlayerString(health, 0, 0, 0);
+            }
+        }
+
+        public class Damage {
+        	private Coord position;
+        	private int health;
+        	private bool hit;
+
+        	public Damage(Coord position, int health, bool hit) {
+        		this.position = position;
+        		this.health = health;
+        		this.hit = hit;
+        	}
+
+        	public String toViewString() {
+        		return join(position.y, position.x, health, (hit ? 1 : 0));
+        	}
+        }
+
+        public enum Action {
+            FASTER,
+            SLOWER,
+            PORT,
+            STARBOARD,
+            FIRE,
+            MINE
+        }
+
+        public class Ship : Entity
+        {
+            int orientation;
+            int speed;
+            int health;
+            int owner;
+            String message;
+            Action? action;
+            //int mineCooldown;
+            //int cannonCooldown;
+            Coord target;
+            public int newOrientation;
+            public Coord newPosition;
+            public Coord newBowCoordinate;
+            public Coord newSternCoordinate;
+
+            public Ship(int x, int y, int orientation, int owner)
+                : base(EntityType.SHIP, x, y)
+            {
+                this.orientation = orientation;
+                this.speed = 0;
+                this.health = INITIAL_SHIP_HEALTH;
+                this.owner = owner;
+            }
+
+            public override string toViewString()
+            {
+                return join(id, position.y, position.x, orientation, health, speed, (action != null ? action.ToString() : "WAIT"), bow().y, bow().x, stern().y,
+                        stern().x, " ;" + (message != null ? message : ""));
+            }
+
+            public String toPlayerString(int playerIdx)
+            {
+                return toPlayerString(orientation, speed, health, owner == playerIdx ? 1 : 0);
+            }
+
+            public void setMessage(string message)
+            {
+                if (message != null && message.Length > 50)
+                {
+                    message = message.Substring(0, 50) + "...";
+                }
+                this.message = message;
+            }
+
+            public void moveTo(int x, int y)
+            {
+                Coord currentPosition = this.position;
+                Coord targetPosition = new Coord(x, y);
+
+                if (currentPosition.Equals(targetPosition))
+                {
+                    this.action = Action.SLOWER;
+                    return;
+                }
+
+                double targetAngle, angleStraight, anglePort, angleStarboard, centerAngle, anglePortCenter, angleStarboardCenter;
+
+                switch (speed)
+                {
+                    case 2:
+                        this.action = Action.SLOWER;
+                        break;
+                    case 1:
+                        // Suppose we've moved first
+                        currentPosition = currentPosition.neighbor(orientation);
+                        if (!currentPosition.isInsideMap())
+                        {
+                            this.action = Action.SLOWER;
+                            break;
+                        }
+
+                        // Target reached at next turn
+                        if (currentPosition.Equals(targetPosition))
+                        {
+                            this.action = null;
+                            break;
+                        }
+
+                        // For each neighbor cell, find the closest to target
+                        targetAngle = currentPosition.angle(targetPosition);
+                        angleStraight = Math.Min(Math.Abs(orientation - targetAngle), 6 - Math.Abs(orientation - targetAngle));
+                        anglePort = Math.Min(Math.Abs((orientation + 1) - targetAngle), Math.Abs((orientation - 5) - targetAngle));
+                        angleStarboard = Math.Min(Math.Abs((orientation + 5) - targetAngle), Math.Abs((orientation - 1) - targetAngle));
+
+                        centerAngle = currentPosition.angle(new Coord(MAP_WIDTH / 2, MAP_HEIGHT / 2));
+                        anglePortCenter = Math.Min(Math.Abs((orientation + 1) - centerAngle), Math.Abs((orientation - 5) - centerAngle));
+                        angleStarboardCenter = Math.Min(Math.Abs((orientation + 5) - centerAngle), Math.Abs((orientation - 1) - centerAngle));
+
+                        // Next to target with bad angle, slow down then rotate (avoid to turn around the target!)
+                        if (currentPosition.distanceTo(targetPosition) == 1 && angleStraight > 1.5)
+                        {
+                            this.action = Action.SLOWER;
+                            break;
+                        }
+
+                        int? distanceMin = null;
+
+                        // Test forward
+                        Coord nextPosition = currentPosition.neighbor(orientation);
+                        if (nextPosition.isInsideMap())
+                        {
+                            distanceMin = nextPosition.distanceTo(targetPosition);
+                            this.action = null;
+                        }
+
+                        // Test port
+                        nextPosition = currentPosition.neighbor((orientation + 1) % 6);
+                        if (nextPosition.isInsideMap())
+                        {
+                            int distance = nextPosition.distanceTo(targetPosition);
+                            if (distanceMin == null || distance < distanceMin || distance == distanceMin && anglePort < angleStraight - 0.5)
+                            {
+                                distanceMin = distance;
+                                this.action = Action.PORT;
+                            }
+                        }
+
+                        // Test starboard
+                        nextPosition = currentPosition.neighbor((orientation + 5) % 6);
+                        if (nextPosition.isInsideMap())
+                        {
+                            int distance = nextPosition.distanceTo(targetPosition);
+                            if (distanceMin == null || distance < distanceMin
+                                    || (distance == distanceMin && angleStarboard < anglePort - 0.5 && this.action == Action.PORT)
+                                    || (distance == distanceMin && angleStarboard < angleStraight - 0.5 && this.action == null)
+                                    || (distance == distanceMin && this.action == Action.PORT && angleStarboard == anglePort
+                                            && angleStarboardCenter < anglePortCenter)
+                                    || (distance == distanceMin && this.action == Action.PORT && angleStarboard == anglePort
+                                            && angleStarboardCenter == anglePortCenter && (orientation == 1 || orientation == 4)))
+                            {
+                                distanceMin = distance;
+                                this.action = Action.STARBOARD;
+                            }
+                        }
+                        break;
+                    case 0:
+                        // Rotate ship towards target
+                        targetAngle = currentPosition.angle(targetPosition);
+                        angleStraight = Math.Min(Math.Abs(orientation - targetAngle), 6 - Math.Abs(orientation - targetAngle));
+                        anglePort = Math.Min(Math.Abs((orientation + 1) - targetAngle), Math.Abs((orientation - 5) - targetAngle));
+                        angleStarboard = Math.Min(Math.Abs((orientation + 5) - targetAngle), Math.Abs((orientation - 1) - targetAngle));
+
+                        centerAngle = currentPosition.angle(new Coord(MAP_WIDTH / 2, MAP_HEIGHT / 2));
+                        anglePortCenter = Math.Min(Math.Abs((orientation + 1) - centerAngle), Math.Abs((orientation - 5) - centerAngle));
+                        angleStarboardCenter = Math.Min(Math.Abs((orientation + 5) - centerAngle), Math.Abs((orientation - 1) - centerAngle));
+
+                        Coord forwardPosition = currentPosition.neighbor(orientation);
+
+                        this.action = null;
+
+                        if (anglePort <= angleStarboard)
+                        {
+                            this.action = Action.PORT;
+                        }
+
+                        if (angleStarboard < anglePort || angleStarboard == anglePort && angleStarboardCenter < anglePortCenter
+                                || angleStarboard == anglePort && angleStarboardCenter == anglePortCenter && (orientation == 1 || orientation == 4))
+                        {
+                            this.action = Action.STARBOARD;
+                        }
+
+                        if (forwardPosition.isInsideMap() && angleStraight <= anglePort && angleStraight <= angleStarboard)
+                        {
+                            this.action = Action.FASTER;
+                        }
+                        break;
+                }
+
+            }
+
+            public void faster()
+            {
+                this.action = Action.FASTER;
+            }
+
+            public void slower()
+            {
+                this.action = Action.SLOWER;
+            }
+
+            public void port()
+            {
+                this.action = Action.PORT;
+            }
+
+            public void starboard()
+            {
+                this.action = Action.STARBOARD;
+            }
+
+            public void placeMine()
+            {
+                if (MINES_ENABLED)
+                {
+                    this.action = Action.MINE;
+                }
+            }
+
+            public Coord stern()
+            {
+                return position.neighbor((orientation + 3) % 6);
+            }
+
+            public Coord bow()
+            {
+                return position.neighbor(orientation);
+            }
+
+            public Coord newStern()
+            {
+                return position.neighbor((newOrientation + 3) % 6);
+            }
+
+            public Coord newBow()
+            {
+                return position.neighbor(newOrientation);
+            }
+
+            public bool at(Coord coord)
+            {
+                Coord _stern = stern();
+                Coord _bow = bow();
+                return _stern != null && _stern.Equals(coord) || _bow != null && _bow.Equals(coord) || position.Equals(coord);
+            }
+
+            public bool newBowIntersect(Ship other)
+            {
+                return newBowCoordinate != null && (newBowCoordinate.Equals(other.newBowCoordinate) || newBowCoordinate.Equals(other.newPosition)
+                        || newBowCoordinate.Equals(other.newSternCoordinate));
+            }
+
+            public bool newBowIntersect(List<Ship> ships)
+            {
+                foreach (var other in ships)
+                {
+                    if (this != other && newBowIntersect(other))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public bool newPositionsIntersect(Ship other)
+            {
+                bool sternCollision = newSternCoordinate != null && (newSternCoordinate.Equals(other.newBowCoordinate)
+                        || newSternCoordinate.Equals(other.newPosition) || newSternCoordinate.Equals(other.newSternCoordinate));
+                bool centerCollision = newPosition != null && (newPosition.Equals(other.newBowCoordinate) || newPosition.Equals(other.newPosition)
+                        || newPosition.Equals(other.newSternCoordinate));
+                return newBowIntersect(other) || sternCollision || centerCollision;
+            }
+
+            public bool newPositionsIntersect(List<Ship> ships)
+            {
+                foreach (var other in ships)
+                {
+                    if (this != other && newPositionsIntersect(other))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public void damage(int health)
+            {
+                this.health -= health;
+                if (this.health <= 0)
+                {
+                    this.health = 0;
+                }
+            }
+
+            public void heal(int health)
+            {
+                this.health += health;
+                if (this.health > MAX_SHIP_HEALTH)
+                {
+                    this.health = MAX_SHIP_HEALTH;
+                }
+            }
+
+            public void fire(int x, int y)
+            {
+                if (CANNONS_ENABLED)
+                {
+                    Coord target = new Coord(x, y);
+                    this.target = target;
+                    this.action = Action.FIRE;
+                }
+            }
+        }
 
         //private static class Player {
         //	private int id;
