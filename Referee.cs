@@ -1,12 +1,10 @@
-﻿#define LEAGUE_LEVEL_3
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace coders_of_the_caribbean_engine_dotnet
+namespace coders_of_the_caribbean_referee_dotnet
 {
 
     public class Referee

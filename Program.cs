@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace coders_of_the_caribbean_engine_dotnet
+namespace coders_of_the_caribbean_referee_dotnet
 {
     class Program
     {
