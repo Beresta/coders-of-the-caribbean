@@ -85,7 +85,7 @@ class Referee extends MultiReferee {
         }
     }
 
-    private static final Pattern PLAYER_INPUT_MOVE_PATTERN = Pattern.compile("MOVE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?",
+    private static final Pattern PLAYER_INPUT_MOVE_PATTERN = Pattern.compile("MOVE (?<x>-?[0-9]{1,8})\\s+(?<y>-?[0-9]{1,8})(?:\\s+(?<message>.+))?",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAYER_INPUT_SLOWER_PATTERN = Pattern.compile("SLOWER(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAYER_INPUT_FASTER_PATTERN = Pattern.compile("FASTER(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
@@ -352,6 +352,7 @@ class Referee extends MultiReferee {
         int orientation;
         int speed;
         int health;
+        int initialHealth;
         int owner;
         String message;
         Action action;
@@ -641,7 +642,6 @@ class Referee extends MultiReferee {
     private List<Player> players;
     private List<Ship> ships;
     private List<Damage> damage;
-    private List<Ship> shipLosts;
     private List<Coord> cannonBallExplosions;
     private int shipsPerPlayer;
     private int mineCount;
@@ -679,7 +679,6 @@ class Referee extends MultiReferee {
         cannonballs = new ArrayList<>();
         cannonBallExplosions = new ArrayList<>();
         damage = new ArrayList<>();
-        shipLosts = new ArrayList<>();
 
         // Generate Players
         this.players = new ArrayList<Player>(playerCount);
@@ -713,14 +712,11 @@ class Referee extends MultiReferee {
             int y = 1 + random.nextInt(MAP_HEIGHT / 2);
 
             Mine m = new Mine(x, y);
-            boolean valid = true;
-            for (Ship ship : this.ships) {
-                if (ship.at(m.position)) {
-                    valid = false;
-                    break;
-                }
-            }
-            if (valid) {
+
+            boolean cellIsFreeOfMines = mines.stream().noneMatch(mine -> mine.position.equals(m.position));
+            boolean cellIsFreeOfShips = ships.stream().noneMatch(ship -> ship.at(m.position));
+
+            if (cellIsFreeOfShips && cellIsFreeOfMines) {
                 if (y != MAP_HEIGHT - 1 - y) {
                     mines.add(new Mine(x, MAP_HEIGHT - 1 - y));
                 }
@@ -737,26 +733,19 @@ class Referee extends MultiReferee {
             int h = MIN_RUM_BARREL_VALUE + random.nextInt(1 + MAX_RUM_BARREL_VALUE - MIN_RUM_BARREL_VALUE);
 
             RumBarrel m = new RumBarrel(x, y, h);
-            boolean valid = true;
-            for (Ship ship : this.ships) {
-                if (ship.at(m.position)) {
-                    valid = false;
-                    break;
-                }
-            }
-            for (Mine mine : this.mines) {
-                if (mine.position.equals(m.position)) {
-                    valid = false;
-                    break;
-                }
-            }
-            if (valid) {
+
+            boolean cellIsFreeOfBarrels = barrels.stream().noneMatch(barrel -> barrel.position.equals(m.position));
+            boolean cellIsFreeOfMines = mines.stream().noneMatch(mine -> mine.position.equals(m.position));
+            boolean cellIsFreeOfShips = ships.stream().noneMatch(ship -> ship.at(m.position));
+
+            if (cellIsFreeOfShips && cellIsFreeOfMines && cellIsFreeOfBarrels) {
                 if (y != MAP_HEIGHT - 1 - y) {
                     barrels.add(new RumBarrel(x, MAP_HEIGHT - 1 - y, h));
                 }
                 barrels.add(m);
             }
         }
+        barrelCount = barrels.size();
 
     }
 
@@ -780,7 +769,6 @@ class Referee extends MultiReferee {
         }
         cannonBallExplosions.clear();
         damage.clear();
-        shipLosts.clear();
     }
 
     @Override
@@ -849,6 +837,12 @@ class Referee extends MultiReferee {
         }
     }
 
+    private void updateInitialRum() {
+        for (Ship ship : ships) {
+            ship.initialHealth = ship.health;
+        }
+    }
+
     private void moveCannonballs() {
         for (Iterator<Cannonball> it = cannonballs.iterator(); it.hasNext();) {
             Cannonball ball = it.next();
@@ -901,9 +895,10 @@ class Referee extends MultiReferee {
 
                             if (target.isInsideMap()) {
                                 boolean cellIsFreeOfBarrels = barrels.stream().noneMatch(barrel -> barrel.position.equals(target));
+                                boolean cellIsFreeOfMines = mines.stream().noneMatch(mine -> mine.position.equals(target));
                                 boolean cellIsFreeOfShips = ships.stream().filter(b -> b != ship).noneMatch(b -> b.at(target));
 
-                                if (cellIsFreeOfBarrels && cellIsFreeOfShips) {
+                                if (cellIsFreeOfBarrels && cellIsFreeOfShips && cellIsFreeOfMines) {
                                     ship.mineCooldown = COOLDOWN_MINE;
                                     Mine mine = new Mine(target.x, target.y);
                                     mines.add(mine);
@@ -928,7 +923,7 @@ class Referee extends MultiReferee {
         }
     }
 
-    private boolean checkCollisions(Ship ship) {
+    private void checkCollisions(Ship ship) {
         Coord bow = ship.bow();
         Coord stern = ship.stern();
         Coord center = ship.position;
@@ -952,8 +947,6 @@ class Referee extends MultiReferee {
                 it.remove();
             }
         }
-
-        return ship.health <= 0;
     }
 
     private void moveShips() {
@@ -1014,9 +1007,7 @@ class Referee extends MultiReferee {
             for (Player player : players) {
                 for (Ship ship : player.shipsAlive) {
                     ship.position = ship.newPosition;
-                    if (checkCollisions(ship)) {
-                        shipLosts.add(ship);
-                    }
+                    checkCollisions(ship);
                 }
             }
         }
@@ -1058,14 +1049,8 @@ class Referee extends MultiReferee {
         // Apply rotation
         for (Player player : players) {
             for (Ship ship : player.shipsAlive) {
-                if (ship.health == 0) {
-                    continue;
-                }
-
                 ship.orientation = ship.newOrientation;
-                if (checkCollisions(ship)) {
-                    shipLosts.add(ship);
-                }
+                checkCollisions(ship);
             }
         }
     }
@@ -1132,6 +1117,7 @@ class Referee extends MultiReferee {
     protected void updateGame(int round) throws GameOverException {
         moveCannonballs();
         decrementRum();
+        updateInitialRum();
 
         applyActions();
         moveShips();
@@ -1141,8 +1127,14 @@ class Referee extends MultiReferee {
         explodeMines();
         explodeBarrels();
 
-        for (Ship ship : shipLosts) {
-            barrels.add(new RumBarrel(ship.position.x, ship.position.y, REWARD_RUM_BARREL_VALUE));
+        // For each sunk ship, create a new rum barrel with the amount of rum the ship had at the begin of the turn (up to 30).
+        for (Ship ship : ships) {
+            if (ship.health <= 0) {
+                int reward = Math.min(REWARD_RUM_BARREL_VALUE, ship.initialHealth);
+                if (reward > 0) {
+                    barrels.add(new RumBarrel(ship.position.x, ship.position.y, reward));
+                }
+            }
         }
 
         for (Coord position : cannonBallExplosions) {
@@ -1192,7 +1184,7 @@ class Referee extends MultiReferee {
         // Visible mines
         for (Mine mine : mines) {
             boolean visible = false;
-            for (Ship ship : players.get(playerIdx).ships) {
+            for (Ship ship : players.get(playerIdx).shipsAlive) {
                 if (ship.position.distanceTo(mine.position) <= MINE_VISIBILITY_RANGE) {
                     visible = true;
                     break;
