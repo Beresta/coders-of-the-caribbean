@@ -76,7 +76,7 @@ namespace coders_of_the_caribbean_referee_dotnet
             }
         }
 
-        private static Regex PLAYER_INPUT_MOVE_PATTERN = new Regex("MOVE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_MOVE_PATTERN = new Regex("MOVE (?<x>-?[0-9]{1,8})\\s+(?<y>-?[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_SLOWER_PATTERN = new Regex("SLOWER(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_FASTER_PATTERN = new Regex("FASTER(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_WAIT_PATTERN = new Regex("WAIT(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
@@ -405,6 +405,7 @@ namespace coders_of_the_caribbean_referee_dotnet
             public int orientation;
             public int speed;
             public int health;
+            public int initialHealth;
             public int owner;
             public String message;
             public Action? action;
@@ -746,7 +747,6 @@ namespace coders_of_the_caribbean_referee_dotnet
         private List<Player> players = new List<Player>();
         private List<Ship> ships;
         private List<Damage> damage = new List<Damage>();
-        private List<Ship> shipLosts = new List<Ship>();
         private List<Coord> cannonBallExplosions = new List<Coord>();
         private int shipsPerPlayer;
         private int mineCount;
@@ -798,7 +798,7 @@ namespace coders_of_the_caribbean_referee_dotnet
             private UInt64 seed;
         }
 
-        protected void initReferee(int playerCount, Dictionary<string, string> prop)
+        public void initReferee(int playerCount, Dictionary<string, string> prop)
         {
             seed = prop.GetLongProperty("seed", new Random((ulong)DateTime.Now.Ticks).nextLong());
             random = new Random((ulong)seed);
@@ -849,16 +849,9 @@ namespace coders_of_the_caribbean_referee_dotnet
                 int y = 1 + random.nextInt(MAP_HEIGHT / 2);
 
                 Mine m = new Mine(x, y);
-                bool valid = true;
-                foreach (var ship in ships)
-                {
-                    if (ship.at(m.position))
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid)
+                bool cellIsFreeOfMines = !mines.Any(m1 => m1.position.Equals(m.position));
+                bool cellIsFreeOfShips = !ships.Any(s => s.position.Equals(m.position));
+                if (cellIsFreeOfMines && cellIsFreeOfShips)
                 {
                     if (y != MAP_HEIGHT - 1 - y)
                     {
@@ -877,24 +870,10 @@ namespace coders_of_the_caribbean_referee_dotnet
                 int h = MIN_RUM_BARREL_VALUE + random.nextInt(1 + MAX_RUM_BARREL_VALUE - MIN_RUM_BARREL_VALUE);
 
                 RumBarrel m = new RumBarrel(x, y, h);
-                bool valid = true;
-                foreach (var ship in ships)
-                {
-                    if (ship.at(m.position))
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-                foreach (var mine in mines)
-                {
-                    if (mine.position.Equals(m.position))
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid)
+                bool cellIsFreeOfBarrels = barrels.Any(b => b.position.Equals(m.position));
+                bool cellIsFreeOfMines = !mines.Any(m1 => m1.position.Equals(m.position));
+                bool cellIsFreeOfShips = !ships.Any(s => s.position.Equals(m.position));
+                if (cellIsFreeOfShips && cellIsFreeOfMines && cellIsFreeOfBarrels)
                 {
                     if (y != MAP_HEIGHT - 1 - y)
                     {
@@ -903,7 +882,7 @@ namespace coders_of_the_caribbean_referee_dotnet
                     barrels.Add(m);
                 }
             }
-
+            barrelCount = barrels.Count;
         }
 
         protected Dictionary<string, string> getConfiguration()
@@ -916,7 +895,7 @@ namespace coders_of_the_caribbean_referee_dotnet
             return prop;
         }
 
-        protected void prepare(int round)
+        public void prepare(int round)
         {
             foreach (var player in players)
             {
@@ -928,7 +907,6 @@ namespace coders_of_the_caribbean_referee_dotnet
             }
             cannonBallExplosions.Clear();
             damage.Clear();
-            shipLosts.Clear();
         }
 
         protected int getExpectedOutputLineCountForPlayer(int playerIdx)
@@ -1019,6 +997,14 @@ namespace coders_of_the_caribbean_referee_dotnet
             }
         }
 
+        private void updateInitialRum()
+        {
+            foreach(var ship in ships)
+            {
+                ship.initialHealth = ship.health;
+            }
+        }
+
         private void moveCannonballs()
         {
             cannonballs.RemoveAll(b => b.remainingTurns == 0);
@@ -1081,9 +1067,10 @@ namespace coders_of_the_caribbean_referee_dotnet
                                     if (target.isInsideMap())
                                     {
                                         bool cellIsFreeOfBarrels = !barrels.Any(b => b.position.Equals(target));
+                                        bool cellIsFreeOfMines = !mines.Any(m => m.position.Equals(target));
                                         bool cellIsFreeOfShips = !ships.Any(s => s != ship && s.at(target));
 
-                                        if (cellIsFreeOfBarrels && cellIsFreeOfShips)
+                                        if (cellIsFreeOfBarrels && cellIsFreeOfShips && cellIsFreeOfMines)
                                         {
                                             ship.mineCooldown = COOLDOWN_MINE;
                                             Mine mine = new Mine(target.x, target.y);
@@ -1110,7 +1097,7 @@ namespace coders_of_the_caribbean_referee_dotnet
             }
         }
 
-        private bool checkCollisions(Ship ship)
+        private void checkCollisions(Ship ship)
         {
             Coord bow = ship.bow();
             Coord stern = ship.stern();
@@ -1131,8 +1118,6 @@ namespace coders_of_the_caribbean_referee_dotnet
                 damage.AddRange(mine.Item2);
                 mines.Remove(mine.Item1);
             }
-
-            return ship.health <= 0;
         }
 
         private void moveShips() {
@@ -1195,10 +1180,8 @@ namespace coders_of_the_caribbean_referee_dotnet
                     foreach (var ship in player.shipsAlive)
                     {
                         ship.position = ship.newPosition;
-        				if (checkCollisions(ship)) {
-        					shipLosts.Add(ship);
-        				}
-        			}
+                        checkCollisions(ship);
+                    }
         		}
         	}
         }
@@ -1243,14 +1226,8 @@ namespace coders_of_the_caribbean_referee_dotnet
             {
                 foreach (var ship in player.shipsAlive)
                 {
-        			if (ship.health == 0) {
-        				continue;
-        			}
-
         			ship.orientation = ship.newOrientation;
-        			if (checkCollisions(ship)) {
-        				shipLosts.Add(ship);
-        			}
+                    checkCollisions(ship);
         		}
         	}
         }
@@ -1326,6 +1303,7 @@ namespace coders_of_the_caribbean_referee_dotnet
         protected void updateGame(int round) {
         	moveCannonballs();
         	decrementRum();
+            updateInitialRum();
 
         	applyActions();
         	moveShips();
@@ -1335,9 +1313,18 @@ namespace coders_of_the_caribbean_referee_dotnet
         	explodeMines();
         	explodeBarrels();
 
-        	foreach (var ship in shipLosts) {
-        		barrels.Add(new RumBarrel(ship.position.x, ship.position.y, REWARD_RUM_BARREL_VALUE));
-        	}
+            // For each sunk ship, create a new rum barrel with the amount of rum the ship had at the begin of the turn (up to 30).
+            foreach(var ship in ships)
+            {
+                if(ship.health <= 0)
+                {
+                    int reward = Math.Min(REWARD_RUM_BARREL_VALUE, ship.initialHealth);
+                    if(reward > 0)
+                    {
+                        barrels.Add(new RumBarrel(ship.position.x, ship.position.y, reward));
+                    }
+                }
+            }
 
             foreach (var position in cannonBallExplosions) {
         		damage.Add(new Damage(position, 0, false));
@@ -1385,7 +1372,7 @@ namespace coders_of_the_caribbean_referee_dotnet
         	// Visible mines
         	foreach (var mine in mines) {
         		bool visible = false;
-        		foreach (var ship in players[playerIdx].ships) {
+        		foreach (var ship in players[playerIdx].shipsAlive) {
         			if (ship.position.distanceTo(mine.position) <= MINE_VISIBILITY_RANGE) {
         				visible = true;
         				break;
