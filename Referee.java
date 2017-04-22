@@ -92,12 +92,21 @@ class Referee extends MultiReferee {
     private static final Pattern PLAYER_INPUT_WAIT_PATTERN = Pattern.compile("WAIT(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAYER_INPUT_PORT_PATTERN = Pattern.compile("PORT(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAYER_INPUT_STARBOARD_PATTERN = Pattern.compile("STARBOARD(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PLAYER_INPUT_FIRE_PATTERN = Pattern.compile("FIRE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?",
+    private static final Pattern PLAYER_INPUT_FIRE_PATTERN = Pattern.compile("FIRE (?<x>-?[0-9]{1,8})\\s+(?<y>-?[0-9]{1,8})(?:\\s+(?<message>.+))?",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern PLAYER_INPUT_MINE_PATTERN = Pattern.compile("MINE(?:\\s+(?<message>.+))?", Pattern.CASE_INSENSITIVE);
 
     public static int clamp(int val, int min, int max) {
         return Math.max(min, Math.min(max, val));
+    }
+
+    public static long parseProperty(Properties prop, String key, long defaultValue) {
+        try {
+            return Long.valueOf(prop.getProperty(key));
+        } catch (NumberFormatException e) {
+            // Ignore invalid data
+        }
+        return defaultValue;
     }
 
     @SafeVarargs
@@ -658,22 +667,20 @@ class Referee extends MultiReferee {
 
     @Override
     protected void initReferee(int playerCount, Properties prop) throws InvalidFormatException {
-        seed = Long.valueOf(prop.getProperty("seed", String.valueOf(new Random(System.currentTimeMillis()).nextLong())));
+        seed = parseProperty(prop, "seed", new Random(System.currentTimeMillis()).nextLong());
+
         random = new Random(this.seed);
 
-        shipsPerPlayer = clamp(
-                Integer.valueOf(prop.getProperty("shipsPerPlayer", String.valueOf(random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS))), MIN_SHIPS,
+        shipsPerPlayer = clamp((int) parseProperty(prop, "shipsPerPlayer", random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS), MIN_SHIPS,
                 MAX_SHIPS);
 
         if (MAX_MINES > MIN_MINES) {
-            mineCount = clamp(Integer.valueOf(prop.getProperty("mineCount", String.valueOf(random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES))),
-                    MIN_MINES, MAX_MINES);
+            mineCount = clamp((int) parseProperty(prop, "mineCount", random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES), MIN_MINES, MAX_MINES);
         } else {
             mineCount = MIN_MINES;
         }
 
-        barrelCount = clamp(
-                Integer.valueOf(prop.getProperty("barrelCount", String.valueOf(random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS))),
+        barrelCount = clamp((int) parseProperty(prop, "barrelCount", random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS),
                 MIN_RUM_BARRELS, MAX_RUM_BARRELS);
 
         cannonballs = new ArrayList<>();
@@ -923,12 +930,11 @@ class Referee extends MultiReferee {
         }
     }
 
-    private void checkCollisions(Ship ship) {
+    private void checkBarrelCollisions(Ship ship) {
         Coord bow = ship.bow();
         Coord stern = ship.stern();
         Coord center = ship.position;
 
-        // Collision with the barrels
         for (Iterator<RumBarrel> it = barrels.iterator(); it.hasNext();) {
             RumBarrel barrel = it.next();
             if (barrel.position.equals(bow) || barrel.position.equals(stern) || barrel.position.equals(center)) {
@@ -936,8 +942,9 @@ class Referee extends MultiReferee {
                 it.remove();
             }
         }
+    }
 
-        // Collision with the mines
+    private void checkMineCollisions() {
         for (Iterator<Mine> it = mines.iterator(); it.hasNext();) {
             Mine mine = it.next();
             List<Damage> mineDamage = mine.explode(ships, false);
@@ -947,6 +954,16 @@ class Referee extends MultiReferee {
                 it.remove();
             }
         }
+    }
+
+    private void checkCollisions() {
+        // Check collisions with Barrels
+        for (Ship ship : this.ships) {
+            checkBarrelCollisions(ship);
+        }
+
+        // Check collisions with Mines
+        checkMineCollisions();
     }
 
     private void moveShips() {
@@ -1004,12 +1021,12 @@ class Referee extends MultiReferee {
                 collisions.clear();
             }
 
-            for (Player player : players) {
-                for (Ship ship : player.shipsAlive) {
-                    ship.position = ship.newPosition;
-                    checkCollisions(ship);
-                }
+            // Move ships to their new location
+            for (Ship ship : this.ships) {
+                ship.position = ship.newPosition;
             }
+
+            checkCollisions();
         }
     }
 
@@ -1047,12 +1064,11 @@ class Referee extends MultiReferee {
         }
 
         // Apply rotation
-        for (Player player : players) {
-            for (Ship ship : player.shipsAlive) {
-                ship.orientation = ship.newOrientation;
-                checkCollisions(ship);
-            }
+        for (Ship ship : this.ships) {
+            ship.orientation = ship.newOrientation;
         }
+
+        checkCollisions();
     }
 
     private boolean gameIsOver() {
