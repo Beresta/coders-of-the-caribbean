@@ -82,7 +82,7 @@ namespace coders_of_the_caribbean_referee_dotnet
         private static Regex PLAYER_INPUT_WAIT_PATTERN = new Regex("WAIT(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_PORT_PATTERN = new Regex("PORT(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_STARBOARD_PATTERN = new Regex("STARBOARD(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
-        private static Regex PLAYER_INPUT_FIRE_PATTERN = new Regex("FIRE (?<x>[0-9]{1,8})\\s+(?<y>[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
+        private static Regex PLAYER_INPUT_FIRE_PATTERN = new Regex("FIRE (?<x>-?[0-9]{1,8})\\s+(?<y>-?[0-9]{1,8})(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
         private static Regex PLAYER_INPUT_MINE_PATTERN = new Regex("MINE(?:\\s+(?<message>.+))?", RegexOptions.IgnoreCase);
 
         public static int clamp(int val, int min, int max)
@@ -798,23 +798,43 @@ namespace coders_of_the_caribbean_referee_dotnet
             private UInt64 seed;
         }
 
+        public static long parseProperty(Dictionary<string, string> prop, string key, long dft)
+        {
+            if (!prop.ContainsKey(key))
+            {
+                return dft;
+            }
+            else
+            {
+                var val = prop[key];
+                try
+                {
+                    return long.Parse(val);
+                }
+                catch
+                {
+                    return dft;
+                }
+            }
+        }
+
         public void initReferee(int playerCount, Dictionary<string, string> prop)
         {
-            seed = prop.GetLongProperty("seed", new Random((ulong)DateTime.Now.Ticks).nextLong());
+            seed = parseProperty(prop, "seed", new Random((ulong)DateTime.Now.Ticks).nextLong());
             random = new Random((ulong)seed);
 
-            shipsPerPlayer = clamp(prop.GetIntProperty("shipsPerPlayer", (random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS)), MIN_SHIPS, MAX_SHIPS);
+            shipsPerPlayer = clamp((int)parseProperty(prop, "shipsPerPlayer", (random.nextInt(1 + MAX_SHIPS - MIN_SHIPS) + MIN_SHIPS)), MIN_SHIPS, MAX_SHIPS);
 
             if (MAX_MINES > MIN_MINES)
             {
-                mineCount = clamp(prop.GetIntProperty("mineCount", random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES), MIN_MINES, MAX_MINES);
+                mineCount = clamp((int)parseProperty(prop, "mineCount", random.nextInt(MAX_MINES - MIN_MINES) + MIN_MINES), MIN_MINES, MAX_MINES);
             }
             else
             {
                 mineCount = MIN_MINES;
             }
 
-            barrelCount = clamp(prop.GetIntProperty("barrelCount", random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS), MIN_RUM_BARRELS, MAX_RUM_BARRELS);
+            barrelCount = clamp((int)parseProperty(prop, "barrelCount", random.nextInt(MAX_RUM_BARRELS - MIN_RUM_BARRELS) + MIN_RUM_BARRELS), MIN_RUM_BARRELS, MAX_RUM_BARRELS);
 
             // Generate Players
             for (int i = 0; i < playerCount; i++)
@@ -1097,27 +1117,40 @@ namespace coders_of_the_caribbean_referee_dotnet
             }
         }
 
-        private void checkCollisions(Ship ship)
+        private void checkBarrelCollisions(Ship ship)
         {
             Coord bow = ship.bow();
             Coord stern = ship.stern();
             Coord center = ship.position;
 
-            // Collision with the barrels
             var collisionBarrels = barrels.Where(barrel => barrel.position.Equals(bow) || barrel.position.Equals(stern) || barrel.position.Equals(center)).ToArray();
             foreach (var barrel in collisionBarrels)
             {
                 ship.heal(barrel.health);
                 barrels.Remove(barrel);
             }
+        }
 
-            // Collision with the mines
+        private void checkMineCollisions()
+        {
             var collisionMines = mines.Select(mine => Tuple.Create(mine, mine.explode(ships, false))).Where(m => m.Item2.Count > 0).ToArray();
             foreach (var mine in collisionMines)
             {
                 damage.AddRange(mine.Item2);
                 mines.Remove(mine.Item1);
             }
+        }
+
+        private void checkCollisions()
+        {
+            // Check collisions with Barrels
+            foreach(var ship in ships)
+            {
+                checkBarrelCollisions(ship);
+            }
+
+            // Check collisions with Mines
+            checkMineCollisions();
         }
 
         private void moveShips() {
@@ -1175,15 +1208,14 @@ namespace coders_of_the_caribbean_referee_dotnet
         			collisions.Clear();
         		}
 
-                foreach (var player in players)
+                // Move ships to their new location
+                foreach (var ship in ships)
                 {
-                    foreach (var ship in player.shipsAlive)
-                    {
-                        ship.position = ship.newPosition;
-                        checkCollisions(ship);
-                    }
-        		}
-        	}
+                    ship.position = ship.newPosition;
+                }
+
+                checkCollisions();
+            }
         }
 
         private void rotateShips() {
@@ -1221,15 +1253,13 @@ namespace coders_of_the_caribbean_referee_dotnet
         		collisions.Clear();
         	}
 
-        	// Apply rotation
-        	foreach (var player in players)
+            // Apply rotation
+            foreach (var ship in ships)
             {
-                foreach (var ship in player.shipsAlive)
-                {
-        			ship.orientation = ship.newOrientation;
-                    checkCollisions(ship);
-        		}
-        	}
+                ship.orientation = ship.newOrientation;
+            }
+
+            checkCollisions();
         }
 
         private bool gameIsOver() {
@@ -1480,32 +1510,6 @@ namespace coders_of_the_caribbean_referee_dotnet
         	return 50;
         }
 
-    }
-
-    static class PropertiesExtensions
-    {
-        public static int GetIntProperty(this Dictionary<string, string> prop, string key, int dft)
-        {
-            var val = getProperty(prop, key);
-            if (val == null)
-                return dft;
-            else
-                return int.Parse(val);
-        }
-        public static long GetLongProperty(this Dictionary<string, string> prop, string key, long dft)
-        {
-            var val = getProperty(prop, key);
-            if (val == null)
-                return dft;
-            else
-                return long.Parse(val);
-        }
-        static string getProperty(Dictionary<string, string> prop, string key) // Beresta added
-        {
-            if (prop.ContainsKey(key))
-                return prop[key];
-            return null;
-        }
     }
 
 }
